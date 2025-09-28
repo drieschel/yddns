@@ -4,24 +4,30 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"log"
 	"os"
 
+	"github.com/drieschel/dddns/internal"
 	"github.com/spf13/cobra"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "dddns",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "A lightweight dyndns client",
+	Long:  `Drieschel's lightweight dyndns client`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Run: func(cmd *cobra.Command, args []string) {
+		ipVersions, err := cmd.Flags().GetIntSlice("ip-version")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for _, ipVersion := range ipVersions {
+			internal.ValidateIpVersion(ipVersion)
+		}
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -43,8 +49,7 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	rootCmd.Flags().IntSliceP("protocol", "v", []int{4}, "Supported protocols (4, 6)")
-	rootCmd.Flags().StringP("server", "s", "dyndns.kassserver.com", "DDNS server url")
+	rootCmd.Flags().IntSliceP("ip-version", "v", []int{4}, "Supported ip versions (4, 6)")
 	rootCmd.Flags().StringP("domain", "d", "", "Domain name")
 	rootCmd.Flags().StringP("user", "u", "", "User for authentication")
 	rootCmd.Flags().StringP("password", "p", "", "Password for authentication")
