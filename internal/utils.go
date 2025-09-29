@@ -12,8 +12,8 @@ import (
 	"strings"
 )
 
-const IDENT_URL_IPV4 = "https://v4.ident.me/"
-const IDENT_URL_IPV6 = "https://v6.ident.me/"
+const IDENT_URL_IPV4 = "https://v4.ident.me"
+const IDENT_URL_IPV6 = "https://v6.ident.me"
 
 func CreatePingUrlTemplate(ipVersions []int) string {
 	url := "https://<user>:<password>@dyndns.kasserver.com"

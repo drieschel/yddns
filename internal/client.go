@@ -1,7 +1,8 @@
 package internal
 
 import (
-	"log"
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,30 +16,24 @@ type DynDnsClient struct {
 }
 
 func NewDynDnsClient(authUser string, authPassword string, domain string, ipVersions []int) *DynDnsClient {
-	if len(ipVersions) == 0 {
-		log.Fatal("it must at least one ip version be specified")
-	}
-
-	for ipVersion := range ipVersions {
-		ValidateIpVersion(ipVersion)
-	}
-
 	return &DynDnsClient{AuthUser: authUser, AuthPassword: authPassword, Domain: domain, IpVersions: ipVersions}
 }
 
-func (s *DynDnsClient) Ping() {
+func (s *DynDnsClient) Ping() error {
 	pingUrl := s.BuildPingUrl()
 	resp, err := http.Get(pingUrl)
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if resp.StatusCode > 201 {
-		log.Fatalf("Invalid status code: %d", resp.StatusCode)
+		return errors.New(fmt.Sprintf("Invalid status code: %d", resp.StatusCode))
 	}
 
 	defer resp.Body.Close()
+
+	return nil
 }
 
 func (c *DynDnsClient) BuildPingUrl() string {
