@@ -8,18 +8,19 @@ import (
 	"strings"
 )
 
-type DynDnsClient struct {
-	AuthUser     string
-	AuthPassword string
-	Domain       string
-	IpVersions   []int
+type Client struct {
+	AuthUser        string `mapstructure:"username"`
+	AuthPassword    string `mapstructure:"password"`
+	Domain          string `mapstructure:"domain"`
+	IpVersions      []int  `mapstructure:"ip_versions"`
+	PingUrlTemplate string `mapstructure:"url_template"`
 }
 
-func NewDynDnsClient(authUser string, authPassword string, domain string, ipVersions []int) *DynDnsClient {
-	return &DynDnsClient{AuthUser: authUser, AuthPassword: authPassword, Domain: domain, IpVersions: ipVersions}
+func NewClient(authUser string, authPassword string, domain string, ipVersions []int, pingUrlTemplate string) *Client {
+	return &Client{AuthUser: authUser, AuthPassword: authPassword, Domain: domain, IpVersions: ipVersions, PingUrlTemplate: pingUrlTemplate}
 }
 
-func (s *DynDnsClient) Ping() error {
+func (s *Client) Ping() error {
 	pingUrl := s.BuildPingUrl()
 	resp, err := http.Get(pingUrl)
 
@@ -36,8 +37,8 @@ func (s *DynDnsClient) Ping() error {
 	return nil
 }
 
-func (c *DynDnsClient) BuildPingUrl() string {
-	replacements := map[string]string{"<user>": c.AuthUser, "<password>": c.AuthPassword, "<domain>": c.Domain}
+func (c *Client) BuildPingUrl() string {
+	replacements := map[string]string{"<user>": c.AuthUser, "<password>": c.AuthPassword, "<Domain>": c.Domain}
 
 	for ipVersion := range c.IpVersions {
 		ipStr := strconv.Itoa(ipVersion)
@@ -45,7 +46,7 @@ func (c *DynDnsClient) BuildPingUrl() string {
 		replacements[key] = DetermineIp(ipVersion)
 	}
 
-	url := CreatePingUrlTemplate(c.IpVersions)
+	url := c.PingUrlTemplate
 	for search, replacement := range replacements {
 		url = strings.Replace(url, search, replacement, -1)
 	}

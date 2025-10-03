@@ -1,14 +1,12 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/drieschel/dddns/internal"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -19,14 +17,10 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		ipVersions, err := cmd.Flags().GetIntSlice("ip-version")
-		if err != nil {
-			log.Fatal(err)
-		}
+		var clients []internal.Client
+		values := viper.UnmarshalKey("domain", &clients)
 
-		for _, ipVersion := range ipVersions {
-			internal.ValidateIpVersion(ipVersion)
-		}
+		fmt.Printf("%+v\n", values)
 	},
 }
 
@@ -40,17 +34,13 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.dddns.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	rootCmd.Flags().IntSliceP("ip-version", "v", []int{4}, "Supported ip versions (4, 6)")
-	rootCmd.Flags().StringP("domain", "d", "", "Domain name")
-	rootCmd.Flags().StringP("user", "u", "", "User for authentication")
-	rootCmd.Flags().StringP("password", "p", "", "Password for authentication")
+	viper.SetConfigName("config")       // name of config file (without extension)
+	viper.SetConfigType("toml")         // REQUIRED if the config file does not have the extension in the name
+	viper.AddConfigPath("/etc/dddns")   // path to look for the config file in
+	viper.AddConfigPath("$HOME/.dddns") // call multiple times to add many search paths
+	viper.AddConfigPath(".")            // optionally look for config in the working directory
+	err := viper.ReadInConfig()         // Find and read the config file
+	if err != nil {                     // Handle errors reading the config file
+		panic(fmt.Errorf("fatal error config file: %w", err))
+	}
 }

@@ -39,6 +39,7 @@ func DetermineIp(ipVersion int) string {
 	}
 
 	defer response.Body.Close()
+
 	ip, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Fatal(err)
@@ -59,7 +60,7 @@ func ValidateIpVersion(version int) {
 
 func GetIdentUrl(ipVersion int) (string, error) {
 	if !IsIpVersion(ipVersion) {
-		return "", errors.New(fmt.Sprintf("invalid ip version (%d)", ipVersion))
+		return "", errors.New(fmt.Sprintf("Invalid ip version (%d)", ipVersion))
 	}
 
 	return GetIdentUrls()[ipVersion], nil

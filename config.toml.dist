@@ -1,0 +1,15 @@
+[[domain]]
+domain="abc.de"
+username="user1"
+password="password1"
+url_template="https://domain.tld/something"
+ip_versions=[4,6]
+
+[[domain]]
+domain="mydomain.something.tld"
+username="user2"
+password="password2"
+provider="all-inkl"
+url_template="asdfsad3e3"
+url_template_file="alsdkjfa"
+ip_versions=[4,6]

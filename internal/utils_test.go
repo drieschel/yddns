@@ -23,7 +23,7 @@ func TestGetIdentUrl(t *testing.T) {
 			assert.Equal(t, identUrls[data.Version], actualUrl)
 		} else {
 			assert.Error(t, err)
-			assert.Equal(t, fmt.Sprintf("invalid ip version (%d)", data.Version), err.Error())
+			assert.Equal(t, fmt.Sprintf("Invalid ip version (%d)", data.Version), err.Error())
 		}
 	}
 }
