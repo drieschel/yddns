@@ -3,34 +3,44 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"maps"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 )
 
+const IDENT_URL_IPV4 = "https://v4.ident.me"
+const IDENT_URL_IPV6 = "https://v6.ident.me"
+
+type HttpClient interface {
+	Get(url string) (resp *http.Response, err error)
+}
+
 type Client struct {
-	AuthUser        string `mapstructure:"username"`
-	AuthPassword    string `mapstructure:"password"`
-	Domain          string `mapstructure:"domain"`
-	IpVersions      []int  `mapstructure:"ip_versions"`
-	PingUrlTemplate string `mapstructure:"url_template"`
-	Utils           Utils
+	Domains    []Domain
+	HttpClient HttpClient
 }
 
-func NewClient(authUser string, authPassword string, domain string, ipVersions []int, pingUrlTemplate string) *Client {
-	return &Client{AuthUser: authUser, AuthPassword: authPassword, Domain: domain, IpVersions: ipVersions, PingUrlTemplate: pingUrlTemplate, Utils: Utils{}}
+func NewClient(domains []Domain, httpClient HttpClient) *Client {
+	return &Client{Domains: domains, HttpClient: httpClient}
 }
 
-func (s *Client) Ping() error {
-	pingUrl := s.BuildPingUrl()
-	resp, err := http.Get(pingUrl)
+func (c *Client) Refresh(domain Domain) error {
+	url, err := c.BuildRefreshUrl(domain)
+	if err != nil {
+		return err
+	}
 
+	resp, err := c.HttpClient.Get(url)
 	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode > 201 {
-		return errors.New(fmt.Sprintf("Invalid status code: %d", resp.StatusCode))
+		return errors.New(fmt.Sprintf("invalid status code: %d", resp.StatusCode))
 	}
 
 	defer resp.Body.Close()
@@ -38,19 +48,67 @@ func (s *Client) Ping() error {
 	return nil
 }
 
-func (c *Client) BuildPingUrl() string {
-	replacements := map[string]string{"<user>": c.AuthUser, "<password>": c.AuthPassword, "<Domain>": c.Domain}
+func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
+	replacements := map[string]string{"<username>": domain.AuthUser, "<password>": domain.AuthPassword, "<domain>": domain.Domain}
 
-	for ipVersion := range c.IpVersions {
+	for _, ipVersion := range domain.IpVersions {
+		ip, err := c.DetermineWanIp(ipVersion)
+		if err != nil {
+			return "", err
+		}
+
 		ipStr := strconv.Itoa(ipVersion)
 		key := "<ip" + ipStr + "addr>"
-		replacements[key] = c.Utils.DetermineIp(ipVersion)
+		replacements[key] = ip
 	}
 
-	url := c.PingUrlTemplate
+	url := domain.RefreshUrl
 	for search, replacement := range replacements {
 		url = strings.Replace(url, search, replacement, -1)
 	}
 
-	return url
+	return url, nil
+}
+
+func (c *Client) DetermineWanIp(ipVersion int) (string, error) {
+	url, err := c.GetIdentUrl(ipVersion)
+	if err != nil {
+		return "", err
+	}
+
+	response, err := c.HttpClient.Get(url)
+	if err != nil {
+		return "", err
+	}
+
+	defer response.Body.Close()
+
+	ip, err := io.ReadAll(response.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(ip), nil
+}
+
+func (c *Client) IsIpVersion(version int) bool {
+	return slices.Contains(slices.Collect(maps.Keys(c.GetIdentUrls())), version)
+}
+
+func (c *Client) ValidateIpVersion(version int) {
+	if !c.IsIpVersion(version) {
+		log.Fatalf("invalid ip version: %d", version)
+	}
+}
+
+func (c *Client) GetIdentUrl(ipVersion int) (string, error) {
+	if !c.IsIpVersion(ipVersion) {
+		return "", errors.New(fmt.Sprintf("invalid ip version (%d)", ipVersion))
+	}
+
+	return c.GetIdentUrls()[ipVersion], nil
+}
+
+func (c *Client) GetIdentUrls() map[int]string {
+	return map[int]string{4: IDENT_URL_IPV4, 6: IDENT_URL_IPV6}
 }
