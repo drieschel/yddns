@@ -14,10 +14,11 @@ type Client struct {
 	Domain          string `mapstructure:"domain"`
 	IpVersions      []int  `mapstructure:"ip_versions"`
 	PingUrlTemplate string `mapstructure:"url_template"`
+	Utils           Utils
 }
 
 func NewClient(authUser string, authPassword string, domain string, ipVersions []int, pingUrlTemplate string) *Client {
-	return &Client{AuthUser: authUser, AuthPassword: authPassword, Domain: domain, IpVersions: ipVersions, PingUrlTemplate: pingUrlTemplate}
+	return &Client{AuthUser: authUser, AuthPassword: authPassword, Domain: domain, IpVersions: ipVersions, PingUrlTemplate: pingUrlTemplate, Utils: Utils{}}
 }
 
 func (s *Client) Ping() error {
@@ -43,7 +44,7 @@ func (c *Client) BuildPingUrl() string {
 	for ipVersion := range c.IpVersions {
 		ipStr := strconv.Itoa(ipVersion)
 		key := "<ip" + ipStr + "addr>"
-		replacements[key] = DetermineIp(ipVersion)
+		replacements[key] = c.Utils.DetermineIp(ipVersion)
 	}
 
 	url := c.PingUrlTemplate

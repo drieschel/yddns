@@ -15,7 +15,19 @@ import (
 const IDENT_URL_IPV4 = "https://v4.ident.me"
 const IDENT_URL_IPV6 = "https://v6.ident.me"
 
-func CreatePingUrlTemplate(ipVersions []int) string {
+type HttpClient interface {
+	Get(url string) (resp *http.Response, err error)
+}
+
+type Utils struct {
+	HttpClient HttpClient
+}
+
+func NewUtils() *Utils {
+	return &Utils{HttpClient: &http.Client{}}
+}
+
+func (u *Utils) CreatePingUrlTemplate(ipVersions []int) string {
 	url := "https://<user>:<password>@dyndns.kasserver.com"
 
 	query := make([]string, len(ipVersions))
@@ -27,13 +39,13 @@ func CreatePingUrlTemplate(ipVersions []int) string {
 	return url + "?" + strings.Join(query, "&")
 }
 
-func DetermineIp(ipVersion int) string {
-	url, err := GetIdentUrl(ipVersion)
+func (u *Utils) DetermineIp(ipVersion int) string {
+	url, err := u.GetIdentUrl(ipVersion)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	response, err := http.Get(url)
+	response, err := u.HttpClient.Get(url)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -48,24 +60,24 @@ func DetermineIp(ipVersion int) string {
 	return string(ip)
 }
 
-func IsIpVersion(version int) bool {
-	return slices.Contains(slices.Collect(maps.Keys(GetIdentUrls())), version)
+func (u *Utils) IsIpVersion(version int) bool {
+	return slices.Contains(slices.Collect(maps.Keys(u.GetIdentUrls())), version)
 }
 
-func ValidateIpVersion(version int) {
-	if !IsIpVersion(version) {
+func (u *Utils) ValidateIpVersion(version int) {
+	if !u.IsIpVersion(version) {
 		log.Fatalf("Invalid ip version: %d", version)
 	}
 }
 
-func GetIdentUrl(ipVersion int) (string, error) {
-	if !IsIpVersion(ipVersion) {
+func (u *Utils) GetIdentUrl(ipVersion int) (string, error) {
+	if !u.IsIpVersion(ipVersion) {
 		return "", errors.New(fmt.Sprintf("Invalid ip version (%d)", ipVersion))
 	}
 
-	return GetIdentUrls()[ipVersion], nil
+	return u.GetIdentUrls()[ipVersion], nil
 }
 
-func GetIdentUrls() map[int]string {
+func (u *Utils) GetIdentUrls() map[int]string {
 	return map[int]string{4: IDENT_URL_IPV4, 6: IDENT_URL_IPV6}
 }

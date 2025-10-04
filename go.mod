@@ -3,6 +3,7 @@ module github.com/drieschel/dddns
 go 1.25.1
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
