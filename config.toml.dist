@@ -2,14 +2,12 @@
 domain="abc.de"
 username="user1"
 password="password1"
-url_template="https://domain.tld/something"
+refresh_url="https://domain1.tld/something"
 ip_versions=[4,6]
 
 [[domain]]
 domain="mydomain.something.tld"
 username="user2"
 password="password2"
-provider="all-inkl"
-url_template="asdfsad3e3"
-url_template_file="alsdkjfa"
-ip_versions=[4,6]
+refresh_url="https://domain2.tld/foobar"
+ip_versions=[6]

@@ -12,29 +12,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDetermineIp(t *testing.T) {
-	u := Utils{}
-	for ipVersion, identUrl := range u.GetIdentUrls() {
+func TestDetermineWanIp(t *testing.T) {
+	c := Client{}
+	for ipVersion, identUrl := range c.GetIdentUrls() {
 		expectedIp := uuid.New().String()
-		u := Utils{HttpClient: NewHttpClientMock(t, expectedIp, identUrl)}
-		actualIp := u.DetermineIp(ipVersion)
+		c.HttpClient = NewHttpClientMock(t, expectedIp, identUrl)
+		actualIp := c.DetermineWanIp(ipVersion)
 
 		assert.Equal(t, expectedIp, actualIp)
 	}
 }
 
 func TestIsIpVersion(t *testing.T) {
-	u := Utils{}
+	c := Client{}
 	for _, data := range IpVersionsProvider() {
-		assert.Equal(t, u.IsIpVersion(data.Version), data.IsValid)
+		assert.Equal(t, c.IsIpVersion(data.Version), data.IsValid)
 	}
 }
 
 func TestGetIdentUrl(t *testing.T) {
-	u := Utils{}
-	identUrls := u.GetIdentUrls()
+	c := Client{}
+	identUrls := c.GetIdentUrls()
 	for _, data := range IpVersionsProvider() {
-		actualUrl, err := u.GetIdentUrl(data.Version)
+		actualUrl, err := c.GetIdentUrl(data.Version)
 		if data.IsValid {
 			assert.Nil(t, err)
 			assert.Equal(t, identUrls[data.Version], actualUrl)
@@ -46,8 +46,8 @@ func TestGetIdentUrl(t *testing.T) {
 }
 
 func TestGetIdentUrls(t *testing.T) {
-	u := Utils{}
-	identUrls := u.GetIdentUrls()
+	c := Client{}
+	identUrls := c.GetIdentUrls()
 	assert.Equal(t, 2, len(identUrls))
 	assert.Equal(t, "https://v4.ident.me", identUrls[4])
 	assert.Equal(t, "https://v6.ident.me", identUrls[6])
@@ -70,9 +70,9 @@ func IpVersionsProvider() []struct {
 }
 
 type HttpClientMock struct {
+	t                *testing.T
 	ExpectedResponse string
 	ExpectedUrl      string
-	t                *testing.T
 }
 
 func (c *HttpClientMock) Get(url string) (resp *http.Response, err error) {
@@ -87,5 +87,5 @@ func (c *HttpClientMock) Get(url string) (resp *http.Response, err error) {
 }
 
 func NewHttpClientMock(t *testing.T, expectedResponse string, expectedUrl string) *HttpClientMock {
-	return &HttpClientMock{ExpectedResponse: expectedResponse, ExpectedUrl: expectedUrl, t: t}
+	return &HttpClientMock{t: t, ExpectedResponse: expectedResponse, ExpectedUrl: expectedUrl}
 }
