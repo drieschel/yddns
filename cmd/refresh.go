@@ -24,7 +24,7 @@ var refreshCmd = &cobra.Command{
 		var client = internal.NewClient(domains, &http.Client{})
 
 		for _, domain := range client.Domains {
-			err = client.RefreshIp(domain)
+			err = client.Refresh(domain)
 			if err != nil {
 				fmt.Printf("An error occured when refreshing %s: %s\n", domain.Domain, err)
 			}
