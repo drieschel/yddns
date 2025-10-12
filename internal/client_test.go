@@ -56,6 +56,15 @@ func TestGetIdentUrls(t *testing.T) {
 	assert.Equal(t, "https://v6.ident.me", identUrls[6])
 }
 
+func TestRefresh(t *testing.T) {
+	expectedRefreshUrl := uuid.New().String()
+	domain := Domain{RefreshUrl: expectedRefreshUrl}
+	client := Client{}
+	client.HttpClient = NewHttpClientMock(t, []HttpClientMockData{*NewHttpClientMockData("doesnt matter", expectedRefreshUrl)})
+
+	client.Refresh(domain)
+}
+
 func TestBuildRefreshUrl(t *testing.T) {
 	c := Client{}
 	ipv4 := uuid.New().String()
@@ -74,7 +83,7 @@ func TestBuildRefreshUrl(t *testing.T) {
 				response = ipv6
 			}
 
-			expectedHttpClientData = append(expectedHttpClientData, HttpClientMockData{Url: url, Response: response})
+			expectedHttpClientData = append(expectedHttpClientData, *NewHttpClientMockData(response, url))
 		}
 	}
 
@@ -128,9 +137,19 @@ type HttpClientMock struct {
 	expected    []HttpClientMockData
 }
 
-type HttpClientMockData struct {
-	Response string
-	Url      string
+func NewHttpClientMock(t *testing.T, expected []HttpClientMockData) *HttpClientMock {
+	return &HttpClientMock{t: t, expected: expected, Call: 1, alwaysFirst: false}
+}
+
+func NewHttpClientMockSingleRequest(t *testing.T, expectedResponse string, expectedUrl string) *HttpClientMock {
+	return NewHttpClientMock(t, []HttpClientMockData{{Response: expectedResponse, Url: expectedUrl}})
+}
+
+func NewHttpClientMockAlwaysFirst(t *testing.T, expectedResponse string, expectedUrl string) *HttpClientMock {
+	client := NewHttpClientMock(t, []HttpClientMockData{{Response: expectedResponse, Url: expectedUrl}})
+	client.alwaysFirst = true
+
+	return client
 }
 
 func (c *HttpClientMock) Get(url string) (resp *http.Response, err error) {
@@ -159,17 +178,11 @@ func (c *HttpClientMock) Get(url string) (resp *http.Response, err error) {
 	return response, nil
 }
 
-func NewHttpClientMock(t *testing.T, expected []HttpClientMockData) *HttpClientMock {
-	return &HttpClientMock{t: t, expected: expected, Call: 1, alwaysFirst: false}
+type HttpClientMockData struct {
+	Response string
+	Url      string
 }
 
-func NewHttpClientMockSingleRequest(t *testing.T, expectedResponse string, expectedUrl string) *HttpClientMock {
-	return NewHttpClientMock(t, []HttpClientMockData{{Response: expectedResponse, Url: expectedUrl}})
-}
-
-func NewHttpClientMockAlwaysFirst(t *testing.T, expectedResponse string, expectedUrl string) *HttpClientMock {
-	client := NewHttpClientMock(t, []HttpClientMockData{{Response: expectedResponse, Url: expectedUrl}})
-	client.alwaysFirst = true
-
-	return client
+func NewHttpClientMockData(response string, url string) *HttpClientMockData {
+	return &HttpClientMockData{Response: response, Url: url}
 }

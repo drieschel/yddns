@@ -8,9 +8,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "dddns",
-	Short: "A lightweight dyndns client",
-	Long:  `Drieschel's lightweight dyndns client`,
+	Use:   "yddns",
+	Short: "a flexible and lightweight dyndns client",
+	Long:  `drieschel's flexible and lightweight dyndns client`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
