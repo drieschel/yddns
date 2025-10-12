@@ -1,4 +1,4 @@
-module github.com/drieschel/dddns
+module github.com/drieschel/yddns
 
 go 1.25.1
 
