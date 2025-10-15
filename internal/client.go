@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"maps"
 	"net/http"
 	"slices"
@@ -20,12 +19,11 @@ type HttpClient interface {
 }
 
 type Client struct {
-	Domains    []Domain
 	HttpClient HttpClient
 }
 
-func NewClient(domains []Domain, httpClient HttpClient) *Client {
-	return &Client{Domains: domains, HttpClient: httpClient}
+func NewClient(httpClient HttpClient) *Client {
+	return &Client{HttpClient: httpClient}
 }
 
 func (c *Client) Refresh(domain Domain) error {
@@ -39,7 +37,7 @@ func (c *Client) Refresh(domain Domain) error {
 		return err
 	}
 
-	if resp.StatusCode > 201 {
+	if resp.StatusCode > 204 {
 		return errors.New(fmt.Sprintf("invalid status code: %d", resp.StatusCode))
 	}
 
@@ -49,7 +47,7 @@ func (c *Client) Refresh(domain Domain) error {
 }
 
 func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
-	replacements := map[string]string{"<username>": domain.AuthUser, "<password>": domain.AuthPassword, "<domain>": domain.Domain}
+	replacements := map[string]string{"<username>": domain.AuthUser, "<password>": domain.AuthPassword, "<domain>": domain.Name}
 
 	for _, ipVersion := range domain.IpVersions {
 		ip, err := c.DetermineWanIp(ipVersion)
@@ -93,12 +91,6 @@ func (c *Client) DetermineWanIp(ipVersion int) (string, error) {
 
 func (c *Client) IsIpVersion(version int) bool {
 	return slices.Contains(slices.Collect(maps.Keys(c.GetIdentUrls())), version)
-}
-
-func (c *Client) ValidateIpVersion(version int) {
-	if !c.IsIpVersion(version) {
-		log.Fatalf("invalid ip version: %d", version)
-	}
 }
 
 func (c *Client) GetIdentUrl(ipVersion int) (string, error) {

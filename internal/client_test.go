@@ -108,7 +108,7 @@ func RefreshUrlProvider(ipv4 string, ipv6 string) []struct {
 		ExpectedRefreshUrl string
 	}{
 		{
-			Domain:             Domain{AuthUser: "foo", AuthPassword: "bar", Domain: "fooma.driescheldns.org", IpVersions: []int{4, 6}, RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&c=<domain>&e=<ip4addr>&f=<ip6addr>"},
+			Domain:             Domain{AuthUser: "foo", AuthPassword: "bar", Name: "fooma.driescheldns.org", IpVersions: []int{4, 6}, RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&c=<domain>&e=<ip4addr>&f=<ip6addr>"},
 			ExpectedRefreshUrl: fmt.Sprintf("https://fancy-dyn.dns?a=foo&b=bar&c=fooma.driescheldns.org&e=%s&f=%s", ipv4, ipv6),
 		},
 	}
