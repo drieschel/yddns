@@ -14,14 +14,16 @@ import (
 
 func TestDetermineWanIp(t *testing.T) {
 	c := Client{}
-	for ipVersion, identUrl := range c.GetIdentUrls() {
+	for ipVersion, expectedUrl := range c.GetIdentUrls() {
 		expectedIp := uuid.New().String()
-		c.HttpClient = NewHttpClientMockSingleRequest(t, expectedIp, identUrl)
-		actualIp, err := c.DetermineWanIp(ipVersion)
-		if err != nil {
-			t.Fatal(err)
-		}
 
+		httpClientMock := NewMockHttpClient(t)
+		httpClientMock.EXPECT().Get(expectedUrl).Return(createHttpResponse(expectedIp), nil).Once()
+		c.HttpClient = httpClientMock
+
+		actualIp, err := c.DetermineWanIp(ipVersion)
+
+		assert.NoError(t, err)
 		assert.Equal(t, expectedIp, actualIp)
 	}
 }
@@ -57,12 +59,23 @@ func TestGetIdentUrls(t *testing.T) {
 }
 
 func TestRefresh(t *testing.T) {
-	expectedRefreshUrl := uuid.New().String()
-	domain := Domain{RefreshUrl: expectedRefreshUrl}
-	client := Client{}
-	client.HttpClient = NewHttpClientMock(t, []HttpClientMockData{*NewHttpClientMockData("doesnt matter", expectedRefreshUrl)})
+	for _, domain := range RefreshProvider() {
+		client := Client{}
+		request := createHttpRequest(domain)
+		response := createHttpResponse("something")
+		httpClientMock := NewMockHttpClient(t)
+		httpClientMock.EXPECT().Do(request).Return(response, nil).Once()
+		client.HttpClient = httpClientMock
 
-	client.Refresh(domain)
+		_ = client.Refresh(domain)
+	}
+}
+
+func RefreshProvider() map[string]Domain {
+	return map[string]Domain{
+		"basic auth": Domain{RefreshUrl: uuid.New().String(), AuthUser: "test", AuthPassword: "test", AuthMethod: "basic"},
+		"no auth":    Domain{RefreshUrl: uuid.New().String(), AuthUser: "", AuthPassword: "", AuthMethod: "basic"},
+	}
 }
 
 func TestBuildRefreshUrl(t *testing.T) {
@@ -70,24 +83,24 @@ func TestBuildRefreshUrl(t *testing.T) {
 	ipv4 := uuid.New().String()
 	ipv6 := uuid.New().String()
 	testData := RefreshUrlProvider(ipv4, ipv6)
-	var expectedHttpClientData []HttpClientMockData
+
+	httpClientMock := NewMockHttpClient(t)
+
 	for _, data := range testData {
 		for _, ipVersion := range data.Domain.IpVersions {
-			url, err := c.GetIdentUrl(ipVersion)
-			if err != nil {
-				t.Fatal(err)
-			}
+			url, _ := c.GetIdentUrl(ipVersion)
 
 			response := ipv4
 			if ipVersion == 6 {
 				response = ipv6
 			}
 
-			expectedHttpClientData = append(expectedHttpClientData, *NewHttpClientMockData(response, url))
+			//TODO: Extend with checks for ip address replacements in refresh url
+			httpClientMock.EXPECT().Get(url).Return(createHttpResponse(response), nil).Once()
 		}
 	}
 
-	c.HttpClient = NewHttpClientMock(t, expectedHttpClientData)
+	c.HttpClient = httpClientMock
 
 	for _, data := range testData {
 		actualRefreshUrl, err := c.BuildRefreshUrl(data.Domain)
@@ -99,6 +112,7 @@ func TestBuildRefreshUrl(t *testing.T) {
 	}
 }
 
+// TODO: Extend with checks for ip address replacements in refresh url
 func RefreshUrlProvider(ipv4 string, ipv6 string) []struct {
 	Domain             Domain
 	ExpectedRefreshUrl string
@@ -130,59 +144,21 @@ func IpVersionsProvider() []struct {
 	}
 }
 
-type HttpClientMock struct {
-	t           *testing.T
-	Call        int
-	alwaysFirst bool
-	expected    []HttpClientMockData
-}
+func createHttpRequest(domain Domain) *http.Request {
+	req, _ := http.NewRequest("GET", domain.RefreshUrl, nil)
 
-func NewHttpClientMock(t *testing.T, expected []HttpClientMockData) *HttpClientMock {
-	return &HttpClientMock{t: t, expected: expected, Call: 1, alwaysFirst: false}
-}
-
-func NewHttpClientMockSingleRequest(t *testing.T, expectedResponse string, expectedUrl string) *HttpClientMock {
-	return NewHttpClientMock(t, []HttpClientMockData{{Response: expectedResponse, Url: expectedUrl}})
-}
-
-func NewHttpClientMockAlwaysFirst(t *testing.T, expectedResponse string, expectedUrl string) *HttpClientMock {
-	client := NewHttpClientMock(t, []HttpClientMockData{{Response: expectedResponse, Url: expectedUrl}})
-	client.alwaysFirst = true
-
-	return client
-}
-
-func (c *HttpClientMock) Get(url string) (resp *http.Response, err error) {
-	i := c.Call - 1
-	if c.alwaysFirst {
-		i = 0
+	if domain.AuthUser != "" && domain.AuthPassword != "" {
+		req.SetBasicAuth(domain.AuthUser, domain.AuthPassword)
 	}
 
-	if len(c.expected) <= i {
-		c.t.Fatalf("No mock data exists for request #%d", c.Call)
-	}
+	return req
+}
 
-	expected := c.expected[i]
-
-	assert.Equal(c.t, expected.Url, url)
-
-	response := &http.Response{
+func createHttpResponse(responseBody string) *http.Response {
+	return &http.Response{
 		Status:     "OK",
 		StatusCode: 200,
 		Header:     make(http.Header),
-		Body:       io.NopCloser(bytes.NewBufferString(expected.Response)),
+		Body:       io.NopCloser(bytes.NewBufferString(responseBody)),
 	}
-
-	c.Call++
-
-	return response, nil
-}
-
-type HttpClientMockData struct {
-	Response string
-	Url      string
-}
-
-func NewHttpClientMockData(response string, url string) *HttpClientMockData {
-	return &HttpClientMockData{Response: response, Url: url}
 }

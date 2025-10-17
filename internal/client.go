@@ -11,11 +11,13 @@ import (
 	"strings"
 )
 
+const AUTH_METHOD_BASIC = "basic"
 const IDENT_URL_IPV4 = "https://v4.ident.me"
 const IDENT_URL_IPV6 = "https://v6.ident.me"
 
 type HttpClient interface {
 	Get(url string) (resp *http.Response, err error)
+	Do(req *http.Request) (resp *http.Response, err error)
 }
 
 type Client struct {
@@ -32,13 +34,31 @@ func (c *Client) Refresh(domain Domain) error {
 		return err
 	}
 
-	resp, err := c.HttpClient.Get(url)
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	if domain.AuthUser != "" && domain.AuthPassword != "" {
+		switch domain.AuthMethod {
+		case AUTH_METHOD_BASIC:
+			request.SetBasicAuth(domain.AuthUser, domain.AuthPassword)
+		}
+	}
+
+	resp, err := c.HttpClient.Do(request)
 	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode > 204 {
-		return errors.New(fmt.Sprintf("invalid status code: %d", resp.StatusCode))
+		responseBodyBytes, _ := io.ReadAll(resp.Body)
+		errorString := strings.Trim(string(responseBodyBytes), " ")
+		if errorString == "" {
+			errorString = resp.Status
+		}
+
+		return errors.New(fmt.Sprintf("%s", errorString))
 	}
 
 	defer resp.Body.Close()
@@ -50,14 +70,16 @@ func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
 	replacements := map[string]string{"<username>": domain.AuthUser, "<password>": domain.AuthPassword, "<domain>": domain.Name}
 
 	for _, ipVersion := range domain.IpVersions {
-		ip, err := c.DetermineWanIp(ipVersion)
-		if err != nil {
-			return "", err
-		}
+		key := "<ip" + strconv.Itoa(ipVersion) + "addr>"
 
-		ipStr := strconv.Itoa(ipVersion)
-		key := "<ip" + ipStr + "addr>"
-		replacements[key] = ip
+		if strings.Contains(domain.RefreshUrl, key) {
+			ip, err := c.DetermineWanIp(ipVersion)
+			if err != nil {
+				return "", err
+			}
+
+			replacements[key] = ip
+		}
 	}
 
 	url := domain.RefreshUrl
