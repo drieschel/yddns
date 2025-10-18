@@ -100,7 +100,8 @@ func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
 			}
 
 			if domain.Ip6HostId != "" {
-				ip6 = fmt.Sprintf("%s:%s", ip6[:19], domain.Ip6HostId)
+				prefix := strings.Join(strings.Split(ip6, ":")[:4], ":")
+				ip6 = fmt.Sprintf("%s:%s", prefix, domain.Ip6HostId)
 			}
 		}
 
