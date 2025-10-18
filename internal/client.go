@@ -20,8 +20,8 @@ type HttpClient interface {
 
 type Client struct {
 	httpClient HttpClient
-	ip4        string
-	ip6        string
+	wanIp4     string
+	wanIp6     string
 }
 
 func NewClient(httpClient HttpClient) *Client {
@@ -76,18 +76,32 @@ func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
 	replacements[createReplaceKey("domain")] = domain.Name
 
 	if strings.Contains(domain.RefreshUrl, ip4Key) {
-		ip4, err := c.DetermineWanIp4()
-		if err != nil {
-			return "", err
+		var err error
+		ip4 := domain.Ip4Address
+
+		if ip4 == "" {
+			ip4, err = c.DetermineWanIp4()
+			if err != nil {
+				return "", err
+			}
 		}
 
 		replacements[ip4Key] = ip4
 	}
 
 	if strings.Contains(domain.RefreshUrl, ip6Key) {
-		ip6, err := c.DetermineWanIp6()
-		if err != nil {
-			return "", err
+		var err error
+		ip6 := domain.Ip6Address
+
+		if ip6 == "" {
+			ip6, err = c.DetermineWanIp6()
+			if err != nil {
+				return "", err
+			}
+
+			if domain.Ip6HostId != "" {
+				ip6 = fmt.Sprintf("%s:%s", ip6[:19], domain.Ip6HostId)
+			}
 		}
 
 		replacements[ip6Key] = ip6
@@ -102,7 +116,7 @@ func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
 }
 
 func (c *Client) DetermineWanIp4() (string, error) {
-	if c.ip4 == "" {
+	if c.wanIp4 == "" {
 		response, err := c.httpClient.Get(IDENT_URL_IPV4)
 		if err != nil {
 			return "", err
@@ -115,14 +129,14 @@ func (c *Client) DetermineWanIp4() (string, error) {
 			return "", err
 		}
 
-		c.ip4 = string(ip)
+		c.wanIp4 = string(ip)
 	}
 
-	return c.ip4, nil
+	return c.wanIp4, nil
 }
 
 func (c *Client) DetermineWanIp6() (string, error) {
-	if c.ip6 == "" {
+	if c.wanIp6 == "" {
 		response, err := c.httpClient.Get(IDENT_URL_IPV6)
 		if err != nil {
 			return "", err
@@ -135,10 +149,10 @@ func (c *Client) DetermineWanIp6() (string, error) {
 			return "", err
 		}
 
-		c.ip6 = string(ip)
+		c.wanIp6 = string(ip)
 	}
 
-	return c.ip6, nil
+	return c.wanIp6, nil
 }
 
 func createReplaceKey(name string) string {

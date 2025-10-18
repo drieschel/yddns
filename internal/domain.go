@@ -6,7 +6,9 @@ type Domain struct {
 	AuthUser     string `mapstructure:"username"`
 	AuthPassword string `mapstructure:"password"`
 	AuthMethod   string `mapstructure:"auth_method"`
-	IpVersions   []int  `mapstructure:"ip_versions"`
+	Ip4Address   string `mapstructure:"ip4_address"`
+	Ip6Address   string `mapstructure:"ip6_address"`
+	Ip6HostId    string `mapstructure:"ip6_host_id"`
 	Name         string `mapstructure:"domain"`
 	RefreshUrl   string `mapstructure:"refresh_url"`
 }

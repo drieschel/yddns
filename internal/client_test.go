@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -35,65 +34,72 @@ func RefreshProvider() map[string]Domain {
 }
 
 func TestBuildRefreshUrl(t *testing.T) {
-	c := Client{}
-	ip4 := uuid.New().String()
-	ip6 := uuid.New().String()
-	testData := BuildRefreshUrlProvider(ip4, ip6)
+	for _, data := range BuildRefreshUrlProvider() {
+		httpClient := NewMockHttpClient(t)
+		client := NewClient(httpClient)
 
-	httpClientMock := NewMockHttpClient(t)
-
-	ip4Key := createReplaceKey("ip4addr")
-	ip6Key := createReplaceKey("ip6addr")
-
-	expectedIp4requests := 0
-	expectedIp6requests := 0
-
-	for _, data := range testData {
-		if strings.Contains(data.Domain.RefreshUrl, ip4Key) {
-			expectedIp4requests = 1
+		if data.WanIp4 != "" {
+			httpClient.EXPECT().Get(IDENT_URL_IPV4).Return(createHttpResponse(data.WanIp4), nil).Once()
 		}
 
-		if strings.Contains(data.Domain.RefreshUrl, ip6Key) {
-			expectedIp6requests = 1
+		if data.WanIp6 != "" {
+			httpClient.EXPECT().Get(IDENT_URL_IPV6).Return(createHttpResponse(data.WanIp6), nil).Once()
 		}
-	}
 
-	httpClientMock.EXPECT().Get(IDENT_URL_IPV4).Return(createHttpResponse(ip4), nil).Times(expectedIp4requests)
-	httpClientMock.EXPECT().Get(IDENT_URL_IPV6).Return(createHttpResponse(ip6), nil).Times(expectedIp6requests)
-
-	c.httpClient = httpClientMock
-
-	for _, data := range testData {
-		actualRefreshUrl, err := c.BuildRefreshUrl(data.Domain)
+		actualRefreshUrl, err := client.BuildRefreshUrl(data.Domain)
 
 		assert.NoError(t, err)
-		assert.Equal(t, data.ExpectedRefreshUrl, actualRefreshUrl)
+		assert.Equal(t, data.ExpectedUrl, actualRefreshUrl)
 	}
 }
 
-func BuildRefreshUrlProvider(ipv4 string, ipv6 string) []struct {
-	Domain             Domain
-	ExpectedRefreshUrl string
+func BuildRefreshUrlProvider() []struct {
+	Domain      Domain
+	ExpectedUrl string
+	WanIp4      string
+	WanIp6      string
 } {
 	return []struct {
-		Domain             Domain
-		ExpectedRefreshUrl string
+		Domain      Domain
+		ExpectedUrl string
+		WanIp4      string
+		WanIp6      string
 	}{
 		{
-			Domain:             Domain{AuthUser: "foo", AuthPassword: "bar", Name: "fooma.driescheldns.org", RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&c=<domain>&e=<ip4addr>&f=<ip6addr>"},
-			ExpectedRefreshUrl: fmt.Sprintf("https://fancy-dyn.dns?a=foo&b=bar&c=fooma.driescheldns.org&e=%s&f=%s", ipv4, ipv6),
+			Domain:      Domain{Name: "yddns.drieschel.org", AuthUser: "foo", AuthPassword: "bar", RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&c=<domain>&e=<ip4addr>&f=<ip6addr>"},
+			ExpectedUrl: "https://fancy-dyn.dns?a=foo&b=bar&c=yddns.drieschel.org&e=125.148.255.41&f=e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
+			WanIp4:      "125.148.255.41",
+			WanIp6:      "e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
 		},
 		{
-			Domain:             Domain{AuthUser: "foo", AuthPassword: "bar", Name: "fooma.driescheldns.org", RefreshUrl: "https://fancy-dyn.dns?e=<ip4addr>"},
-			ExpectedRefreshUrl: fmt.Sprintf("https://fancy-dyn.dns?e=%s", ipv4),
+			Domain:      Domain{RefreshUrl: "https://fancy-dyn.dns?e=<ip4addr>"},
+			ExpectedUrl: "https://fancy-dyn.dns?e=125.148.255.41",
+			WanIp4:      "125.148.255.41",
+			WanIp6:      "",
 		},
 		{
-			Domain:             Domain{AuthUser: "foo", AuthPassword: "bar", Name: "fooma.driescheldns.org", RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&f=<ip6addr>"},
-			ExpectedRefreshUrl: fmt.Sprintf("https://fancy-dyn.dns?a=foo&b=bar&f=%s", ipv6),
+			Domain:      Domain{RefreshUrl: "https://fancy-dyn.dns?f=<ip6addr>"},
+			ExpectedUrl: "https://fancy-dyn.dns?f=e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
+			WanIp4:      "",
+			WanIp6:      "e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
 		},
 		{
-			Domain:             Domain{AuthUser: "foo", AuthPassword: "bar", Name: "fooma.driescheldns.org", RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&c=<domain>"},
-			ExpectedRefreshUrl: fmt.Sprintf("https://fancy-dyn.dns?a=foo&b=bar&c=fooma.driescheldns.org"),
+			Domain:      Domain{RefreshUrl: "https://fancy-dyn.dns/something"},
+			ExpectedUrl: fmt.Sprintf("https://fancy-dyn.dns/something"),
+			WanIp4:      "",
+			WanIp6:      "",
+		},
+		{
+			Domain:      Domain{Ip4Address: "192.124.234.52", Ip6Address: "f724:a6ff:51dc:d827:5bbd:ce50:fa6a:d7e2", Ip6HostId: "a7cc:409a:e841:ea15", RefreshUrl: "https://fancy-dyn.dns?e=<ip4addr>&f=<ip6addr>"},
+			ExpectedUrl: "https://fancy-dyn.dns?e=192.124.234.52&f=f724:a6ff:51dc:d827:5bbd:ce50:fa6a:d7e2",
+			WanIp4:      "",
+			WanIp6:      "",
+		},
+		{
+			Domain:      Domain{Ip4Address: "192.124.234.52", Ip6HostId: "a7cc:409a:e841:ea15", RefreshUrl: "https://fancy-dyn.dns?e=<ip4addr>&f=<ip6addr>"},
+			ExpectedUrl: "https://fancy-dyn.dns?e=192.124.234.52&f=d710:6c3b:b3c3:9f6b:a7cc:409a:e841:ea15",
+			WanIp4:      "",
+			WanIp6:      "d710:6c3b:b3c3:9f6b:a7cc:409a:e841:ea15",
 		},
 	}
 }
