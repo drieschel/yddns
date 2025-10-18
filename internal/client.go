@@ -4,28 +4,28 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"net/http"
-	"slices"
-	"strconv"
 	"strings"
 )
 
 const AUTH_METHOD_BASIC = "basic"
+const AUTH_METHOD_QUERY = "query"
 const IDENT_URL_IPV4 = "https://v4.ident.me"
 const IDENT_URL_IPV6 = "https://v6.ident.me"
 
 type HttpClient interface {
-	Get(url string) (resp *http.Response, err error)
 	Do(req *http.Request) (resp *http.Response, err error)
+	Get(url string) (resp *http.Response, err error)
 }
 
 type Client struct {
-	HttpClient HttpClient
+	httpClient HttpClient
+	ip4        string
+	ip6        string
 }
 
 func NewClient(httpClient HttpClient) *Client {
-	return &Client{HttpClient: httpClient}
+	return &Client{httpClient: httpClient}
 }
 
 func (c *Client) Refresh(domain Domain) error {
@@ -41,45 +41,56 @@ func (c *Client) Refresh(domain Domain) error {
 
 	if domain.AuthUser != "" && domain.AuthPassword != "" {
 		switch domain.AuthMethod {
-		case AUTH_METHOD_BASIC:
+		case "", AUTH_METHOD_BASIC:
 			request.SetBasicAuth(domain.AuthUser, domain.AuthPassword)
 		}
 	}
 
-	resp, err := c.HttpClient.Do(request)
+	response, err := c.httpClient.Do(request)
 	if err != nil {
 		return err
 	}
 
-	if resp.StatusCode > 204 {
-		responseBodyBytes, _ := io.ReadAll(resp.Body)
+	if response.StatusCode > 204 {
+		responseBodyBytes, _ := io.ReadAll(response.Body)
 		errorString := strings.Trim(string(responseBodyBytes), " ")
 		if errorString == "" {
-			errorString = resp.Status
+			errorString = response.Status
 		}
 
 		return errors.New(fmt.Sprintf("%s", errorString))
 	}
 
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
 	return nil
 }
 
 func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
-	replacements := map[string]string{"<username>": domain.AuthUser, "<password>": domain.AuthPassword, "<domain>": domain.Name}
+	ip4Key := createReplaceKey("ip4addr")
+	ip6Key := createReplaceKey("ip6addr")
 
-	for _, ipVersion := range domain.IpVersions {
-		key := "<ip" + strconv.Itoa(ipVersion) + "addr>"
+	replacements := map[string]string{}
+	replacements[createReplaceKey("username")] = domain.AuthUser
+	replacements[createReplaceKey("password")] = domain.AuthPassword
+	replacements[createReplaceKey("domain")] = domain.Name
 
-		if strings.Contains(domain.RefreshUrl, key) {
-			ip, err := c.DetermineWanIp(ipVersion)
-			if err != nil {
-				return "", err
-			}
-
-			replacements[key] = ip
+	if strings.Contains(domain.RefreshUrl, ip4Key) {
+		ip4, err := c.DetermineWanIp4()
+		if err != nil {
+			return "", err
 		}
+
+		replacements[ip4Key] = ip4
+	}
+
+	if strings.Contains(domain.RefreshUrl, ip6Key) {
+		ip6, err := c.DetermineWanIp6()
+		if err != nil {
+			return "", err
+		}
+
+		replacements[ip6Key] = ip6
 	}
 
 	url := domain.RefreshUrl
@@ -90,39 +101,46 @@ func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
 	return url, nil
 }
 
-func (c *Client) DetermineWanIp(ipVersion int) (string, error) {
-	url, err := c.GetIdentUrl(ipVersion)
-	if err != nil {
-		return "", err
+func (c *Client) DetermineWanIp4() (string, error) {
+	if c.ip4 == "" {
+		response, err := c.httpClient.Get(IDENT_URL_IPV4)
+		if err != nil {
+			return "", err
+		}
+
+		defer response.Body.Close()
+
+		ip, err := io.ReadAll(response.Body)
+		if err != nil {
+			return "", err
+		}
+
+		c.ip4 = string(ip)
 	}
 
-	response, err := c.HttpClient.Get(url)
-	if err != nil {
-		return "", err
-	}
-
-	defer response.Body.Close()
-
-	ip, err := io.ReadAll(response.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return string(ip), nil
+	return c.ip4, nil
 }
 
-func (c *Client) IsIpVersion(version int) bool {
-	return slices.Contains(slices.Collect(maps.Keys(c.GetIdentUrls())), version)
-}
+func (c *Client) DetermineWanIp6() (string, error) {
+	if c.ip6 == "" {
+		response, err := c.httpClient.Get(IDENT_URL_IPV6)
+		if err != nil {
+			return "", err
+		}
 
-func (c *Client) GetIdentUrl(ipVersion int) (string, error) {
-	if !c.IsIpVersion(ipVersion) {
-		return "", errors.New(fmt.Sprintf("invalid ip version (%d)", ipVersion))
+		defer response.Body.Close()
+
+		ip, err := io.ReadAll(response.Body)
+		if err != nil {
+			return "", err
+		}
+
+		c.ip6 = string(ip)
 	}
 
-	return c.GetIdentUrls()[ipVersion], nil
+	return c.ip6, nil
 }
 
-func (c *Client) GetIdentUrls() map[int]string {
-	return map[int]string{4: IDENT_URL_IPV4, 6: IDENT_URL_IPV6}
+func createReplaceKey(name string) string {
+	return fmt.Sprintf("<%s>", name)
 }

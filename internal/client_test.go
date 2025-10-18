@@ -4,59 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"math/rand/v2"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestDetermineWanIp(t *testing.T) {
-	c := Client{}
-	for ipVersion, expectedUrl := range c.GetIdentUrls() {
-		expectedIp := uuid.New().String()
-
-		httpClientMock := NewMockHttpClient(t)
-		httpClientMock.EXPECT().Get(expectedUrl).Return(createHttpResponse(expectedIp), nil).Once()
-		c.HttpClient = httpClientMock
-
-		actualIp, err := c.DetermineWanIp(ipVersion)
-
-		assert.NoError(t, err)
-		assert.Equal(t, expectedIp, actualIp)
-	}
-}
-
-func TestIsIpVersion(t *testing.T) {
-	c := Client{}
-	for _, data := range IpVersionsProvider() {
-		assert.Equal(t, c.IsIpVersion(data.Version), data.IsValid)
-	}
-}
-
-func TestGetIdentUrl(t *testing.T) {
-	c := Client{}
-	identUrls := c.GetIdentUrls()
-	for _, data := range IpVersionsProvider() {
-		actualUrl, err := c.GetIdentUrl(data.Version)
-		if data.IsValid {
-			assert.Nil(t, err)
-			assert.Equal(t, identUrls[data.Version], actualUrl)
-		} else {
-			assert.Error(t, err)
-			assert.Equal(t, fmt.Sprintf("invalid ip version (%d)", data.Version), err.Error())
-		}
-	}
-}
-
-func TestGetIdentUrls(t *testing.T) {
-	c := Client{}
-	identUrls := c.GetIdentUrls()
-	assert.Equal(t, 2, len(identUrls))
-	assert.Equal(t, "https://v4.ident.me", identUrls[4])
-	assert.Equal(t, "https://v6.ident.me", identUrls[6])
-}
 
 func TestRefresh(t *testing.T) {
 	for _, domain := range RefreshProvider() {
@@ -65,9 +19,11 @@ func TestRefresh(t *testing.T) {
 		response := createHttpResponse("something")
 		httpClientMock := NewMockHttpClient(t)
 		httpClientMock.EXPECT().Do(request).Return(response, nil).Once()
-		client.HttpClient = httpClientMock
+		client.httpClient = httpClientMock
 
-		_ = client.Refresh(domain)
+		err := client.Refresh(domain)
+
+		assert.NoError(t, err)
 	}
 }
 
@@ -80,40 +36,42 @@ func RefreshProvider() map[string]Domain {
 
 func TestBuildRefreshUrl(t *testing.T) {
 	c := Client{}
-	ipv4 := uuid.New().String()
-	ipv6 := uuid.New().String()
-	testData := RefreshUrlProvider(ipv4, ipv6)
+	ip4 := uuid.New().String()
+	ip6 := uuid.New().String()
+	testData := BuildRefreshUrlProvider(ip4, ip6)
 
 	httpClientMock := NewMockHttpClient(t)
 
+	ip4Key := createReplaceKey("ip4addr")
+	ip6Key := createReplaceKey("ip6addr")
+
+	expectedIp4requests := 0
+	expectedIp6requests := 0
+
 	for _, data := range testData {
-		for _, ipVersion := range data.Domain.IpVersions {
-			url, _ := c.GetIdentUrl(ipVersion)
+		if strings.Contains(data.Domain.RefreshUrl, ip4Key) {
+			expectedIp4requests = 1
+		}
 
-			response := ipv4
-			if ipVersion == 6 {
-				response = ipv6
-			}
-
-			//TODO: Extend with checks for ip address replacements in refresh url
-			httpClientMock.EXPECT().Get(url).Return(createHttpResponse(response), nil).Once()
+		if strings.Contains(data.Domain.RefreshUrl, ip6Key) {
+			expectedIp6requests = 1
 		}
 	}
 
-	c.HttpClient = httpClientMock
+	httpClientMock.EXPECT().Get(IDENT_URL_IPV4).Return(createHttpResponse(ip4), nil).Times(expectedIp4requests)
+	httpClientMock.EXPECT().Get(IDENT_URL_IPV6).Return(createHttpResponse(ip6), nil).Times(expectedIp6requests)
+
+	c.httpClient = httpClientMock
 
 	for _, data := range testData {
 		actualRefreshUrl, err := c.BuildRefreshUrl(data.Domain)
-		if err != nil {
-			t.Fatal(err)
-		}
 
+		assert.NoError(t, err)
 		assert.Equal(t, data.ExpectedRefreshUrl, actualRefreshUrl)
 	}
 }
 
-// TODO: Extend with checks for ip address replacements in refresh url
-func RefreshUrlProvider(ipv4 string, ipv6 string) []struct {
+func BuildRefreshUrlProvider(ipv4 string, ipv6 string) []struct {
 	Domain             Domain
 	ExpectedRefreshUrl string
 } {
@@ -122,26 +80,66 @@ func RefreshUrlProvider(ipv4 string, ipv6 string) []struct {
 		ExpectedRefreshUrl string
 	}{
 		{
-			Domain:             Domain{AuthUser: "foo", AuthPassword: "bar", Name: "fooma.driescheldns.org", IpVersions: []int{4, 6}, RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&c=<domain>&e=<ip4addr>&f=<ip6addr>"},
+			Domain:             Domain{AuthUser: "foo", AuthPassword: "bar", Name: "fooma.driescheldns.org", RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&c=<domain>&e=<ip4addr>&f=<ip6addr>"},
 			ExpectedRefreshUrl: fmt.Sprintf("https://fancy-dyn.dns?a=foo&b=bar&c=fooma.driescheldns.org&e=%s&f=%s", ipv4, ipv6),
+		},
+		{
+			Domain:             Domain{AuthUser: "foo", AuthPassword: "bar", Name: "fooma.driescheldns.org", RefreshUrl: "https://fancy-dyn.dns?e=<ip4addr>"},
+			ExpectedRefreshUrl: fmt.Sprintf("https://fancy-dyn.dns?e=%s", ipv4),
+		},
+		{
+			Domain:             Domain{AuthUser: "foo", AuthPassword: "bar", Name: "fooma.driescheldns.org", RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&f=<ip6addr>"},
+			ExpectedRefreshUrl: fmt.Sprintf("https://fancy-dyn.dns?a=foo&b=bar&f=%s", ipv6),
+		},
+		{
+			Domain:             Domain{AuthUser: "foo", AuthPassword: "bar", Name: "fooma.driescheldns.org", RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&c=<domain>"},
+			ExpectedRefreshUrl: fmt.Sprintf("https://fancy-dyn.dns?a=foo&b=bar&c=fooma.driescheldns.org"),
 		},
 	}
 }
 
-func IpVersionsProvider() []struct {
-	Version int
-	IsValid bool
-} {
-	return []struct {
-		Version int
-		IsValid bool
-	}{
-		{Version: rand.IntN(3), IsValid: false},
-		{Version: 4, IsValid: true},
-		{Version: 5, IsValid: false},
-		{Version: 6, IsValid: true},
-		{Version: 7 + rand.IntN(992), IsValid: false},
-	}
+func TestDetermineWanIp4(t *testing.T) {
+	c := Client{}
+
+	expectedUrl := IDENT_URL_IPV4
+	expectedIp := uuid.New().String()
+
+	httpClientMock := NewMockHttpClient(t)
+	httpClientMock.EXPECT().Get(expectedUrl).Return(createHttpResponse(expectedIp), nil).Once()
+	c.httpClient = httpClientMock
+
+	actualIp, err := c.DetermineWanIp4()
+
+	assert.NoError(t, err)
+	assert.Equal(t, expectedIp, actualIp)
+
+	//determine ip cached
+	actualIp, err = c.DetermineWanIp4()
+
+	assert.NoError(t, err)
+	assert.Equal(t, expectedIp, actualIp)
+}
+
+func TestDetermineWanIp6(t *testing.T) {
+	c := Client{}
+
+	expectedUrl := IDENT_URL_IPV6
+	expectedIp := uuid.New().String()
+
+	httpClientMock := NewMockHttpClient(t)
+	httpClientMock.EXPECT().Get(expectedUrl).Return(createHttpResponse(expectedIp), nil).Once()
+	c.httpClient = httpClientMock
+
+	actualIp, err := c.DetermineWanIp6()
+
+	assert.NoError(t, err)
+	assert.Equal(t, expectedIp, actualIp)
+
+	//determine ip cached
+	actualIp, err = c.DetermineWanIp6()
+
+	assert.NoError(t, err)
+	assert.Equal(t, expectedIp, actualIp)
 }
 
 func createHttpRequest(domain Domain) *http.Request {

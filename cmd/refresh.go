@@ -27,8 +27,6 @@ var refreshCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		domains.InitDefaultValues()
-
 		interval, err := cmd.Flags().GetInt(FLAG_NAME_INTERVAL)
 		if err != nil {
 			log.Fatal(err)
