@@ -1,7 +1,7 @@
 # refresh interval in seconds for periodical updates
 refresh_interval=600
 
-# every domain you want to update needs a [[domain]] block.
+# every domain you want to update needs a domain block.
 # define as many [[domain]] blocks as needed.
 [[domain]]
 
@@ -12,8 +12,8 @@ domain="first.fancy.tld"
 username="important"
 password="very-secret"
 
-# refresh url with placeholders. valid placeholders are <domain> <username> <password> <ip4addr> <ip6addr>
-refresh_url="https://dyn-dns-provider.tld/update?domain=<domain>&ip=<ip4addr>"
+# refresh url with placeholders. valid placeholders are <domain> <username> <password> <ip4> <ip6>
+refresh_url="https://dyn-dns-provider.tld/update?domain=<domain>&ip=<ip4>"
 
 # set static ip v4 address [optional]
 ip4_address="10.0.0.1"
@@ -24,11 +24,12 @@ ip6_address="220e:be5b:20f0:9d98:4e05:be8c:5741:ce92"
 # set host id / interface id (not considered when ip6_address is defined) [optional]
 ip6_host_id="5b7a:f9bf:d5b7:a9a8"
 
-# second configured dyn dns domain
+
+# another dyn dns domain configuration
 [[domain]]
 domain="second.fancy.tld"
 
 username="so-important"
 password="top-secret"
 
-refresh_url="https://other-dyn-dns-provider.tld/refresh?user=<username>&pass=<password>&ip4address=<ip4addr>&ip6address=<ip6addr>"
+refresh_url="https://other-dyn-dns-provider.tld/refresh?user=<username>&pass=<password>&ip4address=<ip4>&ip6address=<ip6>"

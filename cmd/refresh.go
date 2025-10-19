@@ -40,6 +40,7 @@ var refreshCmd = &cobra.Command{
 		var client = internal.NewClient(&http.Client{})
 
 		for {
+			client.Clear()
 			for _, domain := range domains.List {
 				err = client.Refresh(domain)
 				if err != nil {

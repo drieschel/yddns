@@ -67,8 +67,8 @@ func (c *Client) Refresh(domain Domain) error {
 }
 
 func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
-	ip4Key := createReplaceKey("ip4addr")
-	ip6Key := createReplaceKey("ip6addr")
+	ip4Key := createReplaceKey("ip4")
+	ip6Key := createReplaceKey("ip6")
 
 	replacements := map[string]string{}
 	replacements[createReplaceKey("username")] = domain.AuthUser
@@ -154,6 +154,11 @@ func (c *Client) DetermineWanIp6() (string, error) {
 	}
 
 	return c.wanIp6, nil
+}
+
+func (c *Client) Clear() {
+	c.wanIp4 = ""
+	c.wanIp6 = ""
 }
 
 func createReplaceKey(name string) string {
