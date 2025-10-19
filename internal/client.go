@@ -8,10 +8,11 @@ import (
 	"strings"
 )
 
-const AUTH_METHOD_BASIC = "basic"
-const AUTH_METHOD_QUERY = "query"
-const IDENT_URL_IPV4 = "https://v4.ident.me"
-const IDENT_URL_IPV6 = "https://v6.ident.me"
+const (
+	AuthMethodBasic = "basic"
+	IdentUrlIpv4    = "https://v4.ident.me"
+	IdentUrlIpv6    = "https://v6.ident.me"
+)
 
 type HttpClient interface {
 	Do(req *http.Request) (resp *http.Response, err error)
@@ -41,7 +42,7 @@ func (c *Client) Refresh(domain Domain) error {
 
 	if domain.AuthUser != "" && domain.AuthPassword != "" {
 		switch domain.AuthMethod {
-		case "", AUTH_METHOD_BASIC:
+		case "", AuthMethodBasic:
 			request.SetBasicAuth(domain.AuthUser, domain.AuthPassword)
 		}
 	}
@@ -52,7 +53,12 @@ func (c *Client) Refresh(domain Domain) error {
 	}
 
 	if response.StatusCode > 204 {
-		responseBodyBytes, _ := io.ReadAll(response.Body)
+		var responseBodyBytes []byte
+		responseBodyBytes, err = io.ReadAll(response.Body)
+		if err != nil {
+			return err
+		}
+
 		errorString := strings.Trim(string(responseBodyBytes), " ")
 		if errorString == "" {
 			errorString = response.Status
@@ -118,7 +124,7 @@ func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
 
 func (c *Client) DetermineWanIp4() (string, error) {
 	if c.wanIp4 == "" {
-		response, err := c.httpClient.Get(IDENT_URL_IPV4)
+		response, err := c.httpClient.Get(IdentUrlIpv4)
 		if err != nil {
 			return "", err
 		}
@@ -138,7 +144,7 @@ func (c *Client) DetermineWanIp4() (string, error) {
 
 func (c *Client) DetermineWanIp6() (string, error) {
 	if c.wanIp6 == "" {
-		response, err := c.httpClient.Get(IDENT_URL_IPV6)
+		response, err := c.httpClient.Get(IdentUrlIpv6)
 		if err != nil {
 			return "", err
 		}

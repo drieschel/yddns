@@ -39,11 +39,11 @@ func TestBuildRefreshUrl(t *testing.T) {
 		client := NewClient(httpClient)
 
 		if data.WanIp4 != "" {
-			httpClient.EXPECT().Get(IDENT_URL_IPV4).Return(createHttpResponse(data.WanIp4), nil).Once()
+			httpClient.EXPECT().Get(IdentUrlIpv4).Return(createHttpResponse(data.WanIp4), nil).Once()
 		}
 
 		if data.WanIp6 != "" {
-			httpClient.EXPECT().Get(IDENT_URL_IPV6).Return(createHttpResponse(data.WanIp6), nil).Once()
+			httpClient.EXPECT().Get(IdentUrlIpv6).Return(createHttpResponse(data.WanIp6), nil).Once()
 		}
 
 		actualRefreshUrl, err := client.BuildRefreshUrl(data.Domain)
@@ -107,7 +107,7 @@ func BuildRefreshUrlProvider() []struct {
 func TestDetermineWanIp4(t *testing.T) {
 	c := Client{}
 
-	expectedUrl := IDENT_URL_IPV4
+	expectedUrl := IdentUrlIpv4
 	expectedIp := uuid.New().String()
 
 	httpClientMock := NewMockHttpClient(t)
@@ -129,7 +129,7 @@ func TestDetermineWanIp4(t *testing.T) {
 func TestDetermineWanIp6(t *testing.T) {
 	c := Client{}
 
-	expectedUrl := IDENT_URL_IPV6
+	expectedUrl := IdentUrlIpv6
 	expectedIp := uuid.New().String()
 
 	httpClientMock := NewMockHttpClient(t)
