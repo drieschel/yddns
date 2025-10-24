@@ -14,8 +14,8 @@ const (
 	DefaultValueRefreshInterval = 600
 	ConfigKeyDomains            = "domain"
 	ConfigKeyRefreshInterval    = "refresh_interval"
-	FlagNamePeriodically        = "periodically"
 	FlagNameInterval            = "interval"
+	FlagNamePeriodically        = "periodically"
 )
 
 var refreshCmd = &cobra.Command{

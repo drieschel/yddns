@@ -1,6 +1,8 @@
 package internal
 
-var authMethods = []string{"basic"}
+const AuthMethodBasic = "basic"
+
+var authMethods = []string{AuthMethodBasic}
 
 type Domain struct {
 	AuthUser     string `mapstructure:"username"`
@@ -11,6 +13,10 @@ type Domain struct {
 	Ip6HostId    string `mapstructure:"ip6_host_id"`
 	Name         string `mapstructure:"domain"`
 	RefreshUrl   string `mapstructure:"refresh_url"`
+}
+
+func NewDomain() *Domain {
+	return &Domain{AuthMethod: AuthMethodBasic}
 }
 
 type Domains struct {

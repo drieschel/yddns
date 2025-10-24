@@ -9,9 +9,8 @@ import (
 )
 
 const (
-	AuthMethodBasic = "basic"
-	IdentUrlIpv4    = "https://v4.ident.me"
-	IdentUrlIpv6    = "https://v6.ident.me"
+	IdentUrlIpv4 = "https://v4.ident.me"
+	IdentUrlIpv6 = "https://v6.ident.me"
 )
 
 type HttpClient interface {
