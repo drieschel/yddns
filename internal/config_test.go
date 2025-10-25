@@ -21,7 +21,7 @@ func TestUnmarshalDomain(t *testing.T) {
 
 		assert.NoError(t, err)
 
-		err = viper.Unmarshal(&actualResult)
+		err = viper.Unmarshal(&actualResult, viper.DecodeHook(CreateDomainConfigDefaultsHookFunc()))
 
 		assert.NoError(t, err)
 		assert.Equal(t, data.expectedResult, actualResult)
@@ -61,6 +61,36 @@ func unmarshalDomainProvider() []domainTestData {
 				RequestMethod: "POST",
 				Template:      "somewhere",
 				UserAgent:     "not-mozilla",
+			},
+		},
+		{
+			givenType: "json",
+			givenConfig: `{
+     						 "domain": "domain1.tld",
+							 "host": "horst1.tld",
+							 "protocol": "https",
+      						 "username": "john",
+      						 "password": "doe",
+      						 "ip4_address": "127.0.0.1",
+							 "ip6_address": "::1",
+  							 "ip6_host_id": "0000:0000:0000:0001",
+      						 "refresh_url": "abcde",
+      						 "template": "somewhere"
+    					  }`,
+			expectedResult: Domain{
+				AuthMethod:    "basic",
+				AuthUser:      "john",
+				AuthPassword:  "doe",
+				DomainName:    "domain1.tld",
+				Host:          "horst1.tld",
+				Ip4Address:    "127.0.0.1",
+				Ip6Address:    "::1",
+				Ip6HostId:     "0000:0000:0000:0001",
+				Protocol:      "https",
+				RefreshUrl:    "abcde",
+				RequestMethod: "GET",
+				Template:      "somewhere",
+				UserAgent:     "yddns/dev",
 			},
 		},
 	}
