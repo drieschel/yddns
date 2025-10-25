@@ -12,7 +12,8 @@ domain="first.fancy.tld"
 username="important"
 password="very-secret"
 
-# refresh url with placeholders. valid placeholders are <domain> <username> <password> <ip4> <ip6>
+# refresh url with placeholders
+# valid placeholders are <domain> <ip4> <ip6> <username> <password> <host> <protocol>
 refresh_url="https://dyn-dns-provider.tld/update?domain=<domain>&ip=<ip4>"
 
 # set static ip v4 address [optional]
@@ -23,7 +24,6 @@ ip6_address="220e:be5b:20f0:9d98:4e05:be8c:5741:ce92"
 
 # set host id / interface id (not considered when ip6_address is defined) [optional]
 ip6_host_id="5b7a:f9bf:d5b7:a9a8"
-
 
 # another dyn dns domain configuration
 [[domain]]

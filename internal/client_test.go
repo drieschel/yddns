@@ -20,7 +20,7 @@ func TestRefresh(t *testing.T) {
 		httpClientMock.EXPECT().Do(request).Return(response, nil).Once()
 		client.httpClient = httpClientMock
 
-		err := client.Refresh(domain)
+		err := client.Refresh(&domain)
 
 		assert.NoError(t, err)
 	}
@@ -46,7 +46,7 @@ func TestBuildRefreshUrl(t *testing.T) {
 			httpClient.EXPECT().Get(IdentUrlIpv6).Return(createHttpResponse(data.WanIp6), nil).Once()
 		}
 
-		actualRefreshUrl, err := client.BuildRefreshUrl(data.Domain)
+		actualRefreshUrl, err := client.BuildRefreshUrl(&data.Domain)
 
 		assert.NoError(t, err)
 		assert.Equal(t, data.ExpectedUrl, actualRefreshUrl)
@@ -66,7 +66,7 @@ func BuildRefreshUrlProvider() []struct {
 		WanIp6      string
 	}{
 		{
-			Domain:      Domain{Name: "yddns.drieschel.org", AuthUser: "foo", AuthPassword: "bar", RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&c=<domain>&e=<ip4>&f=<ip6>"},
+			Domain:      Domain{DomainName: "yddns.drieschel.org", AuthUser: "foo", AuthPassword: "bar", RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&c=<domain>&e=<ip4>&f=<ip6>"},
 			ExpectedUrl: "https://fancy-dyn.dns?a=foo&b=bar&c=yddns.drieschel.org&e=125.148.255.41&f=e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
 			WanIp4:      "125.148.255.41",
 			WanIp6:      "e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",

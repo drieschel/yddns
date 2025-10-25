@@ -19,8 +19,7 @@ This client aims to be simple and easy to use for updating ip addresses in dyn d
 ### Install from source
 Clone the repo, build the command and create a config. That's basically it.
 ````shell
-$ git clone https://github.com/drieschel/yddns.git
-$ cd yddns
+$ git clone https://github.com/drieschel/yddns.git && cd yddns
 $ go build
 $ vi config.toml
 ````

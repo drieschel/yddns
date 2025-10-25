@@ -9,18 +9,19 @@ import (
 )
 
 const (
-	FlagNameConfigFile = "config-file"
+	flagNameConfigFile = "config-file"
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "yddns",
-	Short: "a flexible and lightweight dyndns client",
-	Long:  `drieschel's flexible and lightweight dyndns client`,
-}
+var (
+	version = "dev"
+	rootCmd = &cobra.Command{
+		Version: version,
+		Use:     "yddns",
+		Short:   "A flexible and lightweight dyndns client",
+		Long:    `Drieschel's flexible and lightweight dyndns client`,
+	}
+)
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
@@ -29,13 +30,13 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringP(FlagNameConfigFile, "c", "", "Override default config using absolute file path")
+	rootCmd.PersistentFlags().StringP(flagNameConfigFile, "c", "", "Override default config using absolute file path")
 
 	cobra.OnInitialize(initConfig)
 }
 
 func initConfig() {
-	configFile, err := rootCmd.PersistentFlags().GetString(FlagNameConfigFile)
+	configFile, err := rootCmd.PersistentFlags().GetString(flagNameConfigFile)
 	if err != nil {
 		log.Fatal(err)
 	}

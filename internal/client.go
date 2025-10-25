@@ -28,7 +28,7 @@ func NewClient(httpClient HttpClient) *Client {
 	return &Client{httpClient: httpClient}
 }
 
-func (c *Client) Refresh(domain Domain) error {
+func (c *Client) Refresh(domain *Domain) error {
 	url, err := c.BuildRefreshUrl(domain)
 	if err != nil {
 		return err
@@ -41,7 +41,7 @@ func (c *Client) Refresh(domain Domain) error {
 
 	if domain.AuthUser != "" && domain.AuthPassword != "" {
 		switch domain.AuthMethod {
-		case "", AuthMethodBasic:
+		case "", authMethodBasic:
 			request.SetBasicAuth(domain.AuthUser, domain.AuthPassword)
 		}
 	}
@@ -71,15 +71,29 @@ func (c *Client) Refresh(domain Domain) error {
 	return nil
 }
 
-func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
-	ip4Key := createReplaceKey("ip4")
-	ip6Key := createReplaceKey("ip6")
+func (c *Client) BuildRefreshUrl(domain *Domain) (string, error) {
+	replacements, err := c.BuildReplacements(domain)
+	if err != nil {
+		return "", err
+	}
 
+	url := domain.RefreshUrl
+	for search, replacement := range replacements {
+		url = strings.Replace(url, search, replacement, -1)
+	}
+
+	return url, nil
+}
+
+func (c *Client) BuildReplacements(domain *Domain) (map[string]string, error) {
 	replacements := map[string]string{}
-	replacements[createReplaceKey("username")] = domain.AuthUser
-	replacements[createReplaceKey("password")] = domain.AuthPassword
-	replacements[createReplaceKey("domain")] = domain.Name
+	replacements[createReplaceKey(replaceKeyUsername)] = domain.AuthUser
+	replacements[createReplaceKey(replaceKeyPassword)] = domain.AuthPassword
+	replacements[createReplaceKey(replaceKeyDomainName)] = domain.DomainName
+	replacements[createReplaceKey(replaceKeyHost)] = domain.Host
+	replacements[createReplaceKey(replaceKeyProtocol)] = domain.Protocol
 
+	ip4Key := createReplaceKey("ip4")
 	if strings.Contains(domain.RefreshUrl, ip4Key) {
 		var err error
 		ip4 := domain.Ip4Address
@@ -87,13 +101,14 @@ func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
 		if ip4 == "" {
 			ip4, err = c.DetermineWanIp4()
 			if err != nil {
-				return "", err
+				return replacements, err
 			}
 		}
 
 		replacements[ip4Key] = ip4
 	}
 
+	ip6Key := createReplaceKey("ip6")
 	if strings.Contains(domain.RefreshUrl, ip6Key) {
 		var err error
 		ip6 := domain.Ip6Address
@@ -101,7 +116,7 @@ func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
 		if ip6 == "" {
 			ip6, err = c.DetermineWanIp6()
 			if err != nil {
-				return "", err
+				return replacements, err
 			}
 
 			if domain.Ip6HostId != "" {
@@ -113,12 +128,7 @@ func (c *Client) BuildRefreshUrl(domain Domain) (string, error) {
 		replacements[ip6Key] = ip6
 	}
 
-	url := domain.RefreshUrl
-	for search, replacement := range replacements {
-		url = strings.Replace(url, search, replacement, -1)
-	}
-
-	return url, nil
+	return replacements, nil
 }
 
 func (c *Client) DetermineWanIp4() (string, error) {

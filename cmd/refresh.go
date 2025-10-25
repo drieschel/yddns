@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	DefaultValueRefreshInterval = 600
-	ConfigKeyDomains            = "domain"
-	ConfigKeyRefreshInterval    = "refresh_interval"
-	FlagNameInterval            = "interval"
-	FlagNamePeriodically        = "periodically"
+	defaultValueRefreshInterval = 600
+	configKeyDomains            = "domain"
+	configKeyRefreshInterval    = "refresh_interval"
+	flagNameInterval            = "interval"
+	flagNamePeriodically        = "periodically"
 )
 
 var refreshCmd = &cobra.Command{
@@ -24,17 +24,17 @@ var refreshCmd = &cobra.Command{
 	Long:  `Refresh ip addresses for dynamic dns domains`,
 	Run: func(cmd *cobra.Command, args []string) {
 		domains := internal.Domains{}
-		err := viper.UnmarshalKey(ConfigKeyDomains, &domains.List)
+		err := viper.UnmarshalKey(configKeyDomains, &domains.List)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		interval, err := cmd.Flags().GetInt(FlagNameInterval)
+		interval, err := cmd.Flags().GetInt(flagNameInterval)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		periodically, err := cmd.Flags().GetBool(FlagNamePeriodically)
+		periodically, err := cmd.Flags().GetBool(flagNamePeriodically)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -44,11 +44,11 @@ var refreshCmd = &cobra.Command{
 		for {
 			client.Clear()
 			for _, domain := range domains.List {
-				err = client.Refresh(domain)
+				err = client.Refresh(&domain)
 				if err != nil {
-					log.Printf("An error occured when refreshing %s: %s\n", domain.Name, err)
+					log.Printf("An error occured when refreshing %s: %s\n", domain.DomainName, err)
 				} else {
-					log.Printf("%s successfully refreshed", domain.Name)
+					log.Printf("%s successfully refreshed", domain.DomainName)
 				}
 			}
 
@@ -63,8 +63,8 @@ var refreshCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(refreshCmd)
-	refreshCmd.Flags().IntP(FlagNameInterval, "i", viper.GetInt(ConfigKeyRefreshInterval), "Define refresh interval in seconds")
-	refreshCmd.Flags().BoolP(FlagNamePeriodically, "p", false, "Execute refresh periodically")
+	refreshCmd.Flags().IntP(flagNameInterval, "i", viper.GetInt(configKeyRefreshInterval), "Define refresh interval in seconds")
+	refreshCmd.Flags().BoolP(flagNamePeriodically, "p", false, "Execute refresh periodically")
 
-	viper.SetDefault(ConfigKeyRefreshInterval, DefaultValueRefreshInterval)
+	viper.SetDefault(configKeyRefreshInterval, defaultValueRefreshInterval)
 }
