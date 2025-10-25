@@ -1,6 +1,8 @@
 .idea
-config.*
-!config.*.dist
+config.toml
+config.json
+config.yaml
+config.yml
 dist
 yddns
 yddns.exe
