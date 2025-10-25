@@ -1,27 +1,5 @@
 package internal
 
-import "fmt"
-
-const (
-	authMethodBasic      = "basic"
-	authMethodBearer     = "bearer"
-	requestMethodGet     = "GET"
-	requestMethodPost    = "POST"
-	defaultAuthMethod    = authMethodBasic
-	defaultRequestMethod = requestMethodGet
-	defaultProtocol      = "https"
-	replaceKeyDomainName = "domain"
-	replaceKeyHost       = "host"
-	replaceKeyPassword   = "password"
-	replaceKeyProtocol   = "protocol"
-	replaceKeyUsername   = "username"
-)
-
-var (
-	supportedAuthMethods    = []string{authMethodBasic, authMethodBearer}
-	supportedRequestMethods = []string{requestMethodGet, requestMethodPost}
-)
-
 type Domain struct {
 	AuthMethod    string `mapstructure:"auth_method"`
 	AuthUser      string `mapstructure:"username"`
@@ -36,19 +14,6 @@ type Domain struct {
 	RequestMethod string `mapstructure:"request_method"`
 	Template      string `mapstructure:"template"`
 	UserAgent     string `mapstructure:"user_agent"`
-}
-
-func NewDomain() *Domain {
-	template := &Domain{AuthMethod: defaultAuthMethod, Protocol: defaultProtocol, RequestMethod: defaultRequestMethod}
-	template.SetDefaultUserAgentByVersion("dev")
-
-	return template
-}
-
-func (d *Domain) SetDefaultUserAgentByVersion(version string) *Domain {
-	d.UserAgent = fmt.Sprintf("drieschel / yddns / %s", version)
-
-	return d
 }
 
 type Domains struct {

@@ -41,10 +41,10 @@ func initConfig() {
 		log.Fatal(err)
 	}
 
+	viper.SupportedExts = []string{"toml", "json", "yaml", "yml"}
 	viper.SetConfigFile(configFile)
 
 	if configFile == "" {
-		viper.SupportedExts = []string{"toml", "json", "yaml", "yml"}
 		viper.SetConfigName("config")
 		viper.AddConfigPath("/etc/yddns")
 		viper.AddConfigPath("$HOME/.yddns")

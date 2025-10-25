@@ -34,17 +34,19 @@ func (c *Client) Refresh(domain *Domain) error {
 		return err
 	}
 
-	request, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest(domain.RequestMethod, url, nil)
 	if err != nil {
 		return err
 	}
 
 	if domain.AuthUser != "" && domain.AuthPassword != "" {
 		switch domain.AuthMethod {
-		case "", authMethodBasic:
+		case AuthMethodBasic:
 			request.SetBasicAuth(domain.AuthUser, domain.AuthPassword)
 		}
 	}
+
+	request.Header.Set("User-Agent", domain.UserAgent)
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
@@ -87,11 +89,11 @@ func (c *Client) BuildRefreshUrl(domain *Domain) (string, error) {
 
 func (c *Client) BuildReplacements(domain *Domain) (map[string]string, error) {
 	replacements := map[string]string{}
-	replacements[createReplaceKey(replaceKeyUsername)] = domain.AuthUser
-	replacements[createReplaceKey(replaceKeyPassword)] = domain.AuthPassword
-	replacements[createReplaceKey(replaceKeyDomainName)] = domain.DomainName
-	replacements[createReplaceKey(replaceKeyHost)] = domain.Host
-	replacements[createReplaceKey(replaceKeyProtocol)] = domain.Protocol
+	replacements[createReplaceKey(DomainConfigKeyUsername)] = domain.AuthUser
+	replacements[createReplaceKey(DomainConfigKeyPassword)] = domain.AuthPassword
+	replacements[createReplaceKey(DomainConfigKeyDomain)] = domain.DomainName
+	replacements[createReplaceKey(DomainConfigKeyHost)] = domain.Host
+	replacements[createReplaceKey(DomainConfigKeyProtocol)] = domain.Protocol
 
 	ip4Key := createReplaceKey("ip4")
 	if strings.Contains(domain.RefreshUrl, ip4Key) {

@@ -28,8 +28,8 @@ func TestRefresh(t *testing.T) {
 
 func RefreshProvider() map[string]Domain {
 	return map[string]Domain{
-		"basic auth": Domain{RefreshUrl: uuid.New().String(), AuthUser: "test", AuthPassword: "test", AuthMethod: "basic"},
-		"no auth":    Domain{RefreshUrl: uuid.New().String(), AuthUser: "", AuthPassword: "", AuthMethod: "basic"},
+		"basic auth": Domain{RefreshUrl: uuid.New().String(), AuthUser: "test", AuthPassword: "test", AuthMethod: "basic", UserAgent: "test"},
+		"no auth":    Domain{RefreshUrl: uuid.New().String(), AuthUser: "", AuthPassword: "", AuthMethod: "basic", UserAgent: "test"},
 	}
 }
 
@@ -154,6 +154,8 @@ func createHttpRequest(domain Domain) *http.Request {
 	if domain.AuthUser != "" && domain.AuthPassword != "" {
 		req.SetBasicAuth(domain.AuthUser, domain.AuthPassword)
 	}
+
+	req.Header.Set("User-Agent", domain.UserAgent)
 
 	return req
 }

@@ -11,11 +11,8 @@ import (
 )
 
 const (
-	defaultValueRefreshInterval = 600
-	configKeyDomains            = "domain"
-	configKeyRefreshInterval    = "refresh_interval"
-	flagNameInterval            = "interval"
-	flagNamePeriodically        = "periodically"
+	flagNameInterval     = "interval"
+	flagNamePeriodically = "periodically"
 )
 
 var refreshCmd = &cobra.Command{
@@ -24,7 +21,7 @@ var refreshCmd = &cobra.Command{
 	Long:  `Refresh ip addresses for dynamic dns domains`,
 	Run: func(cmd *cobra.Command, args []string) {
 		domains := internal.Domains{}
-		err := viper.UnmarshalKey(configKeyDomains, &domains.List)
+		err := viper.UnmarshalKey(internal.ConfigKeyDomains, &domains.List, viper.DecodeHook(internal.CreateDomainConfigDefaultsHookFunc()))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -63,8 +60,8 @@ var refreshCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(refreshCmd)
-	refreshCmd.Flags().IntP(flagNameInterval, "i", viper.GetInt(configKeyRefreshInterval), "Define refresh interval in seconds")
+	refreshCmd.Flags().IntP(flagNameInterval, "i", viper.GetInt(internal.ConfigKeyRefreshInterval), "Define refresh interval in seconds")
 	refreshCmd.Flags().BoolP(flagNamePeriodically, "p", false, "Execute refresh periodically")
 
-	viper.SetDefault(configKeyRefreshInterval, defaultValueRefreshInterval)
+	viper.SetDefault(internal.ConfigKeyRefreshInterval, internal.DefaultValueRefreshInterval)
 }
