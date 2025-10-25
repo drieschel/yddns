@@ -1,24 +1,34 @@
 .PHONY: build
 
-NAME	:= yddns
+NAME := yddns
 VERSION	?= dev
 PACKAGE	:= github.com/drieschel/$(NAME)
 
+OS ?=
+ifeq ($(OS),)
+	OS := $(shell uname -o)
+endif
+
 GOOS ?=
 ifeq ($(GOOS),)
-	GOOS = linux
+	GOOS := linux
 	ifeq ($(OS),Windows_NT)
-		GOOS = windows
+		GOOS := windows
+	else ifeq ($(OS),Darwin)
+		GOOS := darwin
 	endif
 endif
 
 GOARCH ?=
 ifeq ($(GOARCH),)
-	GOARCH = $(shell echo $(PROCESSOR_ARCHITECTURE) | tr '[:upper:]' '[:lower:]')
-endif
-
-ifeq ($(GOARCH),x86)
-	GOARCH = 386
+	GOARCH := $(shell uname -m)
+	ifeq ($(GOARCH),x86_64)
+		GOARCH := amd64
+	else ifeq ($(GOARCH),aarch64)
+		GOARCH := arm64
+	else ifeq ($(GOARCH),i386)
+    	GOARCH := 386
+	endif
 endif
 
 build:
