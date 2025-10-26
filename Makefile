@@ -5,17 +5,12 @@ VERSION	?= dev
 PACKAGE	:= github.com/drieschel/$(NAME)
 
 OS ?=
-ifeq ($(OS),)
-	OS := $(shell uname -o)
-endif
-
 GOOS ?=
 ifeq ($(GOOS),)
-	GOOS := linux
 	ifeq ($(OS),Windows_NT)
 		GOOS := windows
-	else ifeq ($(OS),Darwin)
-		GOOS := darwin
+	else
+		GOOS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 	endif
 endif
 
