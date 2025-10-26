@@ -2,7 +2,7 @@
 // github.com/vektra/mockery
 // template: testify
 
-package internal
+package client
 
 import (
 	"net/http"

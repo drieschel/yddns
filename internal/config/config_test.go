@@ -1,4 +1,4 @@
-package internal
+package config
 
 import (
 	"strings"
@@ -59,7 +59,6 @@ func unmarshalDomainProvider() []domainTestData {
 				Protocol:      "https",
 				RefreshUrl:    "abcde",
 				RequestMethod: "POST",
-				Template:      "somewhere",
 				UserAgent:     "not-mozilla",
 			},
 		},
@@ -89,7 +88,6 @@ func unmarshalDomainProvider() []domainTestData {
 				Protocol:      "https",
 				RefreshUrl:    "abcde",
 				RequestMethod: "GET",
-				Template:      "somewhere",
 				UserAgent:     "yddns/dev",
 			},
 		},

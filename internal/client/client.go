@@ -1,4 +1,4 @@
-package internal
+package client
 
 import (
 	"errors"
@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/drieschel/yddns/internal/config"
 )
 
 const (
@@ -28,7 +30,7 @@ func NewClient(httpClient HttpClient) *Client {
 	return &Client{httpClient: httpClient}
 }
 
-func (c *Client) Refresh(domain *Domain) error {
+func (c *Client) Refresh(domain *config.Domain) error {
 	url, err := c.BuildRefreshUrl(domain)
 	if err != nil {
 		return err
@@ -41,7 +43,7 @@ func (c *Client) Refresh(domain *Domain) error {
 
 	if domain.AuthUser != "" && domain.AuthPassword != "" {
 		switch domain.AuthMethod {
-		case AuthMethodBasic:
+		case config.AuthMethodBasic:
 			request.SetBasicAuth(domain.AuthUser, domain.AuthPassword)
 		}
 	}
@@ -73,7 +75,7 @@ func (c *Client) Refresh(domain *Domain) error {
 	return nil
 }
 
-func (c *Client) BuildRefreshUrl(domain *Domain) (string, error) {
+func (c *Client) BuildRefreshUrl(domain *config.Domain) (string, error) {
 	replacements, err := c.BuildReplacements(domain)
 	if err != nil {
 		return "", err
@@ -87,13 +89,13 @@ func (c *Client) BuildRefreshUrl(domain *Domain) (string, error) {
 	return url, nil
 }
 
-func (c *Client) BuildReplacements(domain *Domain) (map[string]string, error) {
+func (c *Client) BuildReplacements(domain *config.Domain) (map[string]string, error) {
 	replacements := map[string]string{}
-	replacements[createReplaceKey(DomainConfigKeyUsername)] = domain.AuthUser
-	replacements[createReplaceKey(DomainConfigKeyPassword)] = domain.AuthPassword
-	replacements[createReplaceKey(DomainConfigKeyDomain)] = domain.DomainName
-	replacements[createReplaceKey(DomainConfigKeyHost)] = domain.Host
-	replacements[createReplaceKey(DomainConfigKeyProtocol)] = domain.Protocol
+	replacements[createReplaceKey(config.DomainKeyUsername)] = domain.AuthUser
+	replacements[createReplaceKey(config.DomainKeyPassword)] = domain.AuthPassword
+	replacements[createReplaceKey(config.DomainKeyDomainName)] = domain.DomainName
+	replacements[createReplaceKey(config.DomainKeyHost)] = domain.Host
+	replacements[createReplaceKey(config.DomainKeyProtocol)] = domain.Protocol
 
 	ip4Key := createReplaceKey("ip4")
 	if strings.Contains(domain.RefreshUrl, ip4Key) {

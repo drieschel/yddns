@@ -1,4 +1,4 @@
-package internal
+package config
 
 type Domain struct {
 	AuthMethod    string `mapstructure:"auth_method"`
@@ -12,10 +12,18 @@ type Domain struct {
 	Protocol      string `mapstructure:"protocol"`
 	RefreshUrl    string `mapstructure:"refresh_url"`
 	RequestMethod string `mapstructure:"request_method"`
-	Template      string `mapstructure:"template"`
 	UserAgent     string `mapstructure:"user_agent"`
 }
 
 type Domains struct {
 	List []Domain
+}
+
+type Template struct {
+	AuthMethod    string `mapstructure:"auth_method"`
+	Host          string `mapstructure:"host"`
+	Protocol      string `mapstructure:"protocol"`
+	RefreshUrl    string `mapstructure:"refresh_url"`
+	RequestMethod string `mapstructure:"request_method"`
+	UserAgent     string `mapstructure:"user_agent"`
 }
