@@ -1,5 +1,5 @@
 # refresh interval in seconds for periodical updates
-refresh_interval=600
+refresh_interval=10
 
 # every domain you want to update needs an own [[domains]] block.
 # define as many [[domains]] blocks as needed.

@@ -49,7 +49,7 @@ The config file must have the name `config.ext`, where `ext` represents the exte
 > Supported config formats are `json`, `toml` and `yaml`.
 
 >[!TIP]
-> Check `config.toml.dist` for an example config.
+> Check `config.toml.example` for an example config with comments.
 ### Help
 ```
 Usage:

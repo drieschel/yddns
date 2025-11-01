@@ -1,0 +1,27 @@
+{
+  "refresh_interval": 10,
+  "domains": [
+    {
+      "domain": "first.fancy.tld",
+      "ip4_address": "10.0.0.1",
+      "ip6_address": "220e:be5b:20f0:9d98:4e05:be8c:5741:ce92",
+      "ip6_host_id": "5b7a:f9bf:d5b7:a9a8",
+      "password": "very-secret",
+      "refresh_url": "https://dyn-dns-provider.tld/update?domain=<domain>&ip=<ip4>",
+      "username": "important"
+    },
+    {
+      "domain": "second.fancy.tld",
+      "host": "other-provider.tld",
+      "password": "top-secret",
+      "refresh_url": ":my-provider",
+      "username": "so-important"
+    }
+  ],
+  "templates": {
+    "my-provider": {
+      "host": "my-provider.tld",
+      "refresh_url": "<protocol>://<host>/path?hostname=<domain>&ip=<ip4>,<ip6>&some=value"
+    }
+  }
+}

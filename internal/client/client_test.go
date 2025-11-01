@@ -14,16 +14,18 @@ import (
 
 func TestRefresh(t *testing.T) {
 	for _, domain := range RefreshProvider() {
+		expectedResponse := uuid.New().String()
 		client := Client{}
 		request := createHttpRequest(domain)
-		response := createHttpResponse("something")
+		response := createHttpResponse(expectedResponse)
 		httpClientMock := NewMockHttpClient(t)
 		httpClientMock.EXPECT().Do(request).Return(response, nil).Once()
 		client.httpClient = httpClientMock
 
-		err := client.Refresh(&domain)
+		actualResponse, err := client.Refresh(&domain)
 
 		assert.NoError(t, err)
+		assert.Equal(t, expectedResponse, actualResponse)
 	}
 }
 
