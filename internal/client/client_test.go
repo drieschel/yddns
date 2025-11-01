@@ -16,12 +16,13 @@ func TestRefresh(t *testing.T) {
 	for name, domain := range RefreshTable() {
 		t.Run(name, func(t *testing.T) {
 			expectedResponse := uuid.New().String()
-			client := Client{}
+
 			request := createHttpRequest(domain)
 			response := createHttpResponse(expectedResponse)
 			httpClientMock := NewMockHttpClient(t)
 			httpClientMock.EXPECT().Do(request).Return(response, nil).Once()
-			client.httpClient = httpClientMock
+
+			client := Client{httpClient: httpClientMock}
 
 			actualResponse, err := client.Refresh(&domain)
 
@@ -33,8 +34,11 @@ func TestRefresh(t *testing.T) {
 
 func RefreshTable() map[string]config.Domain {
 	return map[string]config.Domain{
-		"basic auth": {Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "basic", UserAgent: "test"}, AuthUser: "test", AuthPassword: "test"},
-		"no auth":    {Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "basic", UserAgent: "test"}, AuthUser: "", AuthPassword: ""},
+		"basic auth":     {Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "basic", UserAgent: "test"}, AuthUser: "test", AuthPassword: "pass"},
+		"basic no auth ": {Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "basic", UserAgent: "test"}, AuthUser: "", AuthPassword: ""},
+		"bearer auth":    {Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "bearer", UserAgent: "test"}, AuthUser: "not used", AuthPassword: "token"},
+		"bearer no auth": {Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "bearer", UserAgent: "test"}, AuthUser: "not used", AuthPassword: ""},
+		"no auth":        {Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "", UserAgent: "test"}, AuthUser: "test", AuthPassword: "foo"},
 	}
 }
 
@@ -166,8 +170,10 @@ func TestDetermineWanIp6(t *testing.T) {
 func createHttpRequest(domain config.Domain) *http.Request {
 	req, _ := http.NewRequest("GET", domain.RefreshUrl, nil)
 
-	if domain.AuthUser != "" && domain.AuthPassword != "" {
+	if domain.AuthMethod == "basic" && domain.AuthUser != "" && domain.AuthPassword != "" {
 		req.SetBasicAuth(domain.AuthUser, domain.AuthPassword)
+	} else if domain.AuthMethod == "bearer" && domain.AuthPassword != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", domain.AuthPassword))
 	}
 
 	req.Header.Set("User-Agent", domain.UserAgent)

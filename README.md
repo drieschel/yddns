@@ -29,14 +29,15 @@ For providing the best flexibility, the following configurable domain properties
 | Property       | Default value | Description                                                                                         |
 |----------------|---------------|-----------------------------------------------------------------------------------------------------|
 | refresh_url    | ""            | The refresh url or a template name. Template names must be prefixed with a colon (ie `":dyndns2"`). |
-| username       | ""            | Used for authentication on the service. Can be used in the refresh URL as well.                     |
-| password       | ""            | Used for authentication on the service. Can be used in the refresh URL as well.                     |
+| username       | ""            | Can be used for basic authentication and in the refresh URL.                                        |
+| password       | ""            | Can be used for basic and bearer authentication and in the refresh URL.                             |
 | domain         | ""            | Can be used in the refresh URL, mostly used in combination with templates.                          |
 | protocol       | "https"       | Can be used in the refresh URL, mostly used in combination with templates.                          | 
 | host           | ""            | Can be used in the refresh URL, mostly used in combination with templates.                          |
 | ip4_address    | ""            | A static IPv4 address can be provided.                                                              |
 | ip6_address    | ""            | A static IPv6 address can be provided.                                                              |
 | ip6_host_id    | ""            | A host id/interface id can be provided. Will be ignored in case `ip6_address` is defined.           |
+| auth_method    | "basic"       | The authentication method for the service. Currently supported are "basic" and "bearer".            |
 | request_method | "GET"         | Change the HTTP request method if necessary.                                                        |
 
 ## Usage with config file (`refresh`)
@@ -82,6 +83,7 @@ Usage:
   yddns refresh domain [refresh-url | :template-name] [flags]
 
 Flags:
+      --auth-method string      Set authentication method used for the service (default "basic")
       --domain string           Set name of the domain in the refresh URL [<domain>]
       --host string             Set host name of the service [<host>]
       --ip4-address string      Set IPv4 address instead determining via wan request [<ip4>]

@@ -41,10 +41,15 @@ func (c *Client) Refresh(domain *config.Domain) (string, error) {
 		return "", err
 	}
 
-	if domain.AuthUser != "" && domain.AuthPassword != "" {
-		switch domain.AuthMethod {
-		case config.AuthMethodBasic:
+	switch domain.AuthMethod {
+	case config.AuthMethodBasic:
+		if domain.AuthUser != "" && domain.AuthPassword != "" {
 			request.SetBasicAuth(domain.AuthUser, domain.AuthPassword)
+		}
+
+	case config.AuthMethodBearer:
+		if domain.AuthPassword != "" {
+			request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", domain.AuthPassword))
 		}
 	}
 

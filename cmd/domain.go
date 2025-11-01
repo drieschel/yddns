@@ -63,8 +63,6 @@ func init() {
 	domainCmd.Flags().String(flagRequestMethod, config.DefaultRequestMethod, "Set request method of the service")
 	domainCmd.Flags().String(flagUserAgent, "", "Set user agent in refresh requests")
 	domainCmd.Flags().String(flagUsername, "", "Set username used to authenticate [<username>]")
-
-	_ = domainCmd.Flags().MarkHidden(flagAuthMethod)
 }
 
 func createDomain(cmd *cobra.Command, refreshUrl string) *config.Domain {
