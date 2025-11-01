@@ -31,18 +31,21 @@ const (
 	KeyDomains         = "domains"
 	KeyRefreshInterval = "refresh_interval"
 
-	DomainKeyAuthMethod    = "auth_method"
-	DomainKeyDomainName    = "domain"
-	DomainKeyHost          = "host"
-	DomainKeyIp4Address    = "ip4_address"
-	DomainKeyIp6Address    = "ip6_address"
-	DomainKeyIp6HostId     = "ip6_host_id"
-	DomainKeyPassword      = "password"
-	DomainKeyProtocol      = "protocol"
-	DomainKeyRefreshUrl    = "refresh_url"
-	DomainKeyRequestMethod = "request_method"
-	DomainKeyUserAgent     = "user_agent"
-	DomainKeyUsername      = "username"
+	KeyAuthMethod    = "auth_method"
+	KeyDomainName    = "domain"
+	KeyHost          = "host"
+	KeyIp4Address    = "ip4_address"
+	KeyIp6Address    = "ip6_address"
+	KeyIp6HostId     = "ip6_host_id"
+	KeyPassword      = "password"
+	KeyProtocol      = "protocol"
+	KeyRefreshUrl    = "refresh_url"
+	KeyRequestMethod = "request_method"
+	KeyUserAgent     = "user_agent"
+	KeyUsername      = "username"
+
+	KeyIp4 = "ip4"
+	KeyIp6 = "ip6"
 
 	DirNameTemplates = "templates"
 
@@ -51,7 +54,7 @@ const (
 
 var (
 	Dirs                    = []string{fmt.Sprintf("/etc/%s", AppName), fmt.Sprintf("%s/.%s", AppName, getHomeDir()), getExecDir()}
-	DomainDefaultValues     = map[string]interface{}{DomainKeyAuthMethod: DefaultAuthMethod, DomainKeyRequestMethod: DefaultRequestMethod, DomainKeyProtocol: DefaultProtocol, DomainKeyUserAgent: CreateDefaultUserAgent("dev")}
+	DomainDefaultValues     = map[string]interface{}{KeyAuthMethod: DefaultAuthMethod, KeyRequestMethod: DefaultRequestMethod, KeyProtocol: DefaultProtocol, KeyUserAgent: CreateDefaultUserAgent("dev")}
 	FilePath                = ""
 	SupportedAuthMethods    = []string{AuthMethodBasic, AuthMethodBearer}
 	SupportedProtocols      = []string{ProtocolHttp, ProtocolHttps}
@@ -65,15 +68,21 @@ type Config struct {
 	RefreshInterval int                 `mapstructure:"refresh_interval"`
 }
 
-func New(appVersion string, fs afero.Fs) *Config {
-	c := &Config{AppVersion: appVersion}
+func NewConfig(appVersion string, fs afero.Fs) *Config {
+	c := &Config{AppVersion: appVersion, Domains: []Domain{}}
 
-	err := readFileConfig(c)
+	err := readTemplates(fs, c)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = readTemplates(fs, c)
+	return c
+}
+
+func NewFileConfig(appVersion string, fs afero.Fs) *Config {
+	c := NewConfig(appVersion, fs)
+
+	err := readFileConfig(c)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -108,22 +117,31 @@ func CreateDefaultUserAgent(version string) string {
 func (c *Config) PrepareAndGetDomains() ([]Domain, error) {
 	var domains []Domain
 	for _, d := range c.Domains {
-		if d.RequiresTemplate() {
-			templateName, _ := d.GetTemplateName()
-			template, err := c.GetTemplate(templateName)
-			if err != nil {
-				return []Domain{}, err
-			}
-
-			d.MergeTemplate(template)
+		err := c.PrepareDomain(&d)
+		if err != nil {
+			return domains, err
 		}
-
-		d.InitDefaultValues(c.GetAppVersion())
 
 		domains = append(domains, d)
 	}
 
 	return domains, nil
+}
+
+func (c *Config) PrepareDomain(d *Domain) error {
+	if d.RequiresTemplate() {
+		templateName, _ := d.GetTemplateName()
+		template, err := c.GetTemplate(templateName)
+		if err != nil {
+			return err
+		}
+
+		d.MergeTemplate(template)
+	}
+
+	d.InitDefaultValues(c.GetAppVersion())
+
+	return nil
 }
 
 func getHomeDir() string {

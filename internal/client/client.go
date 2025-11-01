@@ -30,15 +30,15 @@ func NewClient(httpClient HttpClient) *Client {
 	return &Client{httpClient: httpClient}
 }
 
-func (c *Client) Refresh(domain *config.Domain) error {
+func (c *Client) Refresh(domain *config.Domain) (string, error) {
 	url, err := c.BuildRefreshUrl(domain)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	request, err := http.NewRequest(domain.RequestMethod, url, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if domain.AuthUser != "" && domain.AuthPassword != "" {
@@ -52,27 +52,28 @@ func (c *Client) Refresh(domain *config.Domain) error {
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	var responseBody []byte
 	responseBody, err = io.ReadAll(response.Body)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	responseString := strings.Trim(string(responseBody), " ")
-	if responseString == "" {
-		responseString = response.Status
-	}
 
 	if response.StatusCode > 204 {
-		return errors.New(fmt.Sprintf("%s", responseString))
+		if responseString == "" {
+			responseString = response.Status
+		}
+
+		return "", errors.New(fmt.Sprintf("%s", responseString))
 	}
 
 	defer response.Body.Close()
 
-	return nil
+	return responseString, nil
 }
 
 func (c *Client) BuildRefreshUrl(domain *config.Domain) (string, error) {
@@ -93,16 +94,16 @@ func (c *Client) BuildReplacements(domain *config.Domain) (map[string]string, er
 	replacements := NewReplacements()
 
 	replacements.
-		SetDefault(config.DomainKeyProtocol, config.DefaultProtocol)
+		SetDefault(config.KeyProtocol, config.DefaultProtocol)
 
 	replacements.
-		Set(config.DomainKeyUsername, domain.AuthUser).
-		Set(config.DomainKeyPassword, domain.AuthPassword).
-		Set(config.DomainKeyDomainName, domain.DomainName).
-		Set(config.DomainKeyHost, domain.Host).
-		Set(config.DomainKeyProtocol, domain.Protocol)
+		Set(config.KeyUsername, domain.AuthUser).
+		Set(config.KeyPassword, domain.AuthPassword).
+		Set(config.KeyDomainName, domain.DomainName).
+		Set(config.KeyHost, domain.Host).
+		Set(config.KeyProtocol, domain.Protocol)
 
-	ip4Key := createReplaceKey("ip4")
+	ip4Key := createReplaceKey(config.KeyIp4)
 	if strings.Contains(domain.RefreshUrl, ip4Key) {
 		var err error
 		ip4 := domain.Ip4Address
@@ -114,10 +115,10 @@ func (c *Client) BuildReplacements(domain *config.Domain) (map[string]string, er
 			}
 		}
 
-		replacements.Set("ip4", ip4)
+		replacements.Set(config.KeyIp4, ip4)
 	}
 
-	ip6Key := createReplaceKey("ip6")
+	ip6Key := createReplaceKey(config.KeyIp6)
 	if strings.Contains(domain.RefreshUrl, ip6Key) {
 		var err error
 		ip6 := domain.Ip6Address
@@ -134,7 +135,7 @@ func (c *Client) BuildReplacements(domain *config.Domain) (map[string]string, er
 			}
 		}
 
-		replacements.Set("ip6", ip6)
+		replacements.Set(config.KeyIp6, ip6)
 	}
 
 	return replacements.Build(), nil
@@ -219,6 +220,6 @@ func (r *Replacements) SetDefault(key string, value string) *Replacements {
 	return r
 }
 
-func createReplaceKey(name string) string {
-	return fmt.Sprintf("<%s>", name)
+func createReplaceKey(key string) string {
+	return fmt.Sprintf("<%s>", key)
 }

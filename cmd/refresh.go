@@ -31,23 +31,23 @@ var refreshCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		cfg := config.New(version, fs)
+		cfg := config.NewFileConfig(version, fs)
 
 		domains, err := cfg.PrepareAndGetDomains()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		var client = client.NewClient(&http.Client{})
+		client := client.NewClient(&http.Client{})
 
 		for {
 			client.Clear()
 			for _, domain := range domains {
-				err = client.Refresh(&domain)
+				response, err := client.Refresh(&domain)
 				if err != nil {
 					log.Printf("An error occured when refreshing %s: %s\n", domain.DomainName, err)
 				} else {
-					log.Printf("%s successfully refreshed", domain.DomainName)
+					log.Printf("%s refreshed, provider responded \"%s\" ", domain.DomainName, response)
 				}
 			}
 
