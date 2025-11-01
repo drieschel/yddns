@@ -29,8 +29,8 @@ func TestRefresh(t *testing.T) {
 
 func RefreshProvider() map[string]config.Domain {
 	return map[string]config.Domain{
-		"basic auth": config.Domain{RefreshUrl: uuid.New().String(), AuthUser: "test", AuthPassword: "test", AuthMethod: "basic", UserAgent: "test"},
-		"no auth":    config.Domain{RefreshUrl: uuid.New().String(), AuthUser: "", AuthPassword: "", AuthMethod: "basic", UserAgent: "test"},
+		"basic auth": config.Domain{Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "basic", UserAgent: "test"}, AuthUser: "test", AuthPassword: "test"},
+		"no auth":    config.Domain{Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "basic", UserAgent: "test"}, AuthUser: "", AuthPassword: ""},
 	}
 }
 
@@ -67,37 +67,37 @@ func BuildRefreshUrlProvider() []struct {
 		WanIp6      string
 	}{
 		{
-			Domain:      config.Domain{DomainName: "yddns.drieschel.org", AuthUser: "foo", AuthPassword: "bar", RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&c=<domain>&e=<ip4>&f=<ip6>"},
+			Domain:      config.Domain{DomainName: "yddns.drieschel.org", AuthUser: "foo", AuthPassword: "bar", Template: config.Template{RefreshUrl: "https://fancy-dyn.dns?a=<username>&b=<password>&c=<domain>&e=<ip4>&f=<ip6>"}},
 			ExpectedUrl: "https://fancy-dyn.dns?a=foo&b=bar&c=yddns.drieschel.org&e=125.148.255.41&f=e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
 			WanIp4:      "125.148.255.41",
 			WanIp6:      "e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
 		},
 		{
-			Domain:      config.Domain{RefreshUrl: "https://fancy-dyn.dns?e=<ip4>"},
+			Domain:      config.Domain{Template: config.Template{RefreshUrl: "https://fancy-dyn.dns?e=<ip4>"}},
 			ExpectedUrl: "https://fancy-dyn.dns?e=125.148.255.41",
 			WanIp4:      "125.148.255.41",
 			WanIp6:      "",
 		},
 		{
-			Domain:      config.Domain{RefreshUrl: "https://fancy-dyn.dns?f=<ip6>"},
+			Domain:      config.Domain{Template: config.Template{RefreshUrl: "https://fancy-dyn.dns?f=<ip6>"}},
 			ExpectedUrl: "https://fancy-dyn.dns?f=e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
 			WanIp4:      "",
 			WanIp6:      "e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
 		},
 		{
-			Domain:      config.Domain{RefreshUrl: "https://fancy-dyn.dns/something"},
+			Domain:      config.Domain{Template: config.Template{RefreshUrl: "https://fancy-dyn.dns/something"}},
 			ExpectedUrl: fmt.Sprintf("https://fancy-dyn.dns/something"),
 			WanIp4:      "",
 			WanIp6:      "",
 		},
 		{
-			Domain:      config.Domain{Ip4Address: "192.124.234.52", Ip6Address: "f724:a6ff:51dc:d827:5bbd:ce50:fa6a:d7e2", Ip6HostId: "a7cc:409a:e841:ea15", RefreshUrl: "https://fancy-dyn.dns?e=<ip4>&f=<ip6>"},
+			Domain:      config.Domain{Ip4Address: "192.124.234.52", Ip6Address: "f724:a6ff:51dc:d827:5bbd:ce50:fa6a:d7e2", Ip6HostId: "a7cc:409a:e841:ea15", Template: config.Template{RefreshUrl: "https://fancy-dyn.dns?e=<ip4>&f=<ip6>"}},
 			ExpectedUrl: "https://fancy-dyn.dns?e=192.124.234.52&f=f724:a6ff:51dc:d827:5bbd:ce50:fa6a:d7e2",
 			WanIp4:      "",
 			WanIp6:      "",
 		},
 		{
-			Domain:      config.Domain{Ip4Address: "192.124.234.52", Ip6HostId: "a7cc:409a:e841:ea15", RefreshUrl: "https://fancy-dyn.dns?e=<ip4>&f=<ip6>"},
+			Domain:      config.Domain{Ip4Address: "192.124.234.52", Ip6HostId: "a7cc:409a:e841:ea15", Template: config.Template{RefreshUrl: "https://fancy-dyn.dns?e=<ip4>&f=<ip6>"}},
 			ExpectedUrl: "https://fancy-dyn.dns?e=192.124.234.52&f=d710:6c3b:b3c3:9f6b:a7cc:409a:e841:ea15",
 			WanIp4:      "",
 			WanIp6:      "d710:6c3b:b3c3:9f6b:a7cc:409a:e841:ea15",

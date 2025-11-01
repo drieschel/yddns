@@ -21,12 +21,6 @@ var refreshCmd = &cobra.Command{
 	Short: "Refresh ip addresses for dynamic dns domains",
 	Long:  `Refresh ip addresses for dynamic dns domains`,
 	Run: func(cmd *cobra.Command, args []string) {
-		domains := config.Domains{}
-		err := viper.UnmarshalKey(config.KeyDomains, &domains.List, viper.DecodeHook(config.CreateDomainConfigDefaultsHookFunc()))
-		if err != nil {
-			log.Fatal(err)
-		}
-
 		interval, err := cmd.Flags().GetInt(flagNameInterval)
 		if err != nil {
 			log.Fatal(err)
@@ -37,11 +31,18 @@ var refreshCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
+		cfg := config.New(version, fs)
+
+		domains, err := cfg.PrepareAndGetDomains()
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		var client = client.NewClient(&http.Client{})
 
 		for {
 			client.Clear()
-			for _, domain := range domains.List {
+			for _, domain := range domains {
 				err = client.Refresh(&domain)
 				if err != nil {
 					log.Printf("An error occured when refreshing %s: %s\n", domain.DomainName, err)

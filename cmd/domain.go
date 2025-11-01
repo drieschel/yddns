@@ -10,7 +10,7 @@ import (
 
 // domainCmd represents the domain command
 var domainCmd = &cobra.Command{
-	Use:   "domain [refresh url or template name]",
+	Use:   "domain [refresh url | template name]",
 	Short: "Refresh a domain via cli",
 	Long:  `Refresh a single domain via command"`,
 	Args:  cobra.ExactArgs(1),

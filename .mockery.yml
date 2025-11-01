@@ -12,6 +12,6 @@ require-template-schema-exists: true
 template: testify
 template-schema: '{{.Template}}.schema.json'
 packages:
-  github.com/drieschel/yddns/internal:
+  github.com/drieschel/yddns/internal/client:
     config:
       all: true

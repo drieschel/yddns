@@ -55,19 +55,19 @@ func (c *Client) Refresh(domain *config.Domain) error {
 		return err
 	}
 
+	var responseBody []byte
+	responseBody, err = io.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+
+	responseString := strings.Trim(string(responseBody), " ")
+	if responseString == "" {
+		responseString = response.Status
+	}
+
 	if response.StatusCode > 204 {
-		var responseBodyBytes []byte
-		responseBodyBytes, err = io.ReadAll(response.Body)
-		if err != nil {
-			return err
-		}
-
-		errorString := strings.Trim(string(responseBodyBytes), " ")
-		if errorString == "" {
-			errorString = response.Status
-		}
-
-		return errors.New(fmt.Sprintf("%s", errorString))
+		return errors.New(fmt.Sprintf("%s", responseString))
 	}
 
 	defer response.Body.Close()
@@ -90,12 +90,17 @@ func (c *Client) BuildRefreshUrl(domain *config.Domain) (string, error) {
 }
 
 func (c *Client) BuildReplacements(domain *config.Domain) (map[string]string, error) {
-	replacements := map[string]string{}
-	replacements[createReplaceKey(config.DomainKeyUsername)] = domain.AuthUser
-	replacements[createReplaceKey(config.DomainKeyPassword)] = domain.AuthPassword
-	replacements[createReplaceKey(config.DomainKeyDomainName)] = domain.DomainName
-	replacements[createReplaceKey(config.DomainKeyHost)] = domain.Host
-	replacements[createReplaceKey(config.DomainKeyProtocol)] = domain.Protocol
+	replacements := NewReplacements()
+
+	replacements.
+		SetDefault(config.DomainKeyProtocol, config.DefaultProtocol)
+
+	replacements.
+		Set(config.DomainKeyUsername, domain.AuthUser).
+		Set(config.DomainKeyPassword, domain.AuthPassword).
+		Set(config.DomainKeyDomainName, domain.DomainName).
+		Set(config.DomainKeyHost, domain.Host).
+		Set(config.DomainKeyProtocol, domain.Protocol)
 
 	ip4Key := createReplaceKey("ip4")
 	if strings.Contains(domain.RefreshUrl, ip4Key) {
@@ -105,11 +110,11 @@ func (c *Client) BuildReplacements(domain *config.Domain) (map[string]string, er
 		if ip4 == "" {
 			ip4, err = c.DetermineWanIp4()
 			if err != nil {
-				return replacements, err
+				return map[string]string{}, err
 			}
 		}
 
-		replacements[ip4Key] = ip4
+		replacements.Set("ip4", ip4)
 	}
 
 	ip6Key := createReplaceKey("ip6")
@@ -120,7 +125,7 @@ func (c *Client) BuildReplacements(domain *config.Domain) (map[string]string, er
 		if ip6 == "" {
 			ip6, err = c.DetermineWanIp6()
 			if err != nil {
-				return replacements, err
+				return map[string]string{}, err
 			}
 
 			if domain.Ip6HostId != "" {
@@ -129,10 +134,10 @@ func (c *Client) BuildReplacements(domain *config.Domain) (map[string]string, er
 			}
 		}
 
-		replacements[ip6Key] = ip6
+		replacements.Set("ip6", ip6)
 	}
 
-	return replacements, nil
+	return replacements.Build(), nil
 }
 
 func (c *Client) DetermineWanIp4() (string, error) {
@@ -178,6 +183,40 @@ func (c *Client) DetermineWanIp6() (string, error) {
 func (c *Client) Clear() {
 	c.wanIp4 = ""
 	c.wanIp6 = ""
+}
+
+type Replacements struct {
+	defaults map[string]string
+	items    map[string]string
+}
+
+func NewReplacements() *Replacements {
+	return &Replacements{defaults: map[string]string{}, items: map[string]string{}}
+}
+
+func (r *Replacements) Build() map[string]string {
+	replacements := map[string]string{}
+	for key, value := range r.items {
+		if defaultValue, ok := r.defaults[key]; value == "" && ok {
+			value = defaultValue
+		}
+
+		replacements[createReplaceKey(key)] = value
+	}
+
+	return replacements
+}
+
+func (r *Replacements) Set(key string, value string) *Replacements {
+	r.items[key] = value
+
+	return r
+}
+
+func (r *Replacements) SetDefault(key string, value string) *Replacements {
+	r.defaults[key] = value
+
+	return r
 }
 
 func createReplaceKey(name string) string {

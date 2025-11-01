@@ -4,8 +4,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/drieschel/yddns/internal/config"
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -13,6 +14,7 @@ const (
 )
 
 var (
+	fs      = afero.NewOsFs()
 	version = "dev"
 	rootCmd = &cobra.Command{
 		Version: version,
@@ -41,18 +43,5 @@ func initConfig() {
 		log.Fatal(err)
 	}
 
-	viper.SupportedExts = []string{"toml", "json", "yaml", "yml"}
-	viper.SetConfigFile(configFile)
-
-	if configFile == "" {
-		viper.SetConfigName("config")
-		viper.AddConfigPath("/etc/yddns")
-		viper.AddConfigPath("$HOME/.yddns")
-		viper.AddConfigPath("./")
-	}
-
-	err = viper.ReadInConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
+	config.FilePath = configFile
 }

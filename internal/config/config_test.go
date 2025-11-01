@@ -21,7 +21,7 @@ func TestUnmarshalDomain(t *testing.T) {
 
 		assert.NoError(t, err)
 
-		err = viper.Unmarshal(&actualResult, viper.DecodeHook(CreateDomainConfigDefaultsHookFunc()))
+		err = viper.Unmarshal(&actualResult)
 
 		assert.NoError(t, err)
 		assert.Equal(t, data.expectedResult, actualResult)
@@ -36,7 +36,7 @@ func unmarshalDomainProvider() []domainTestData {
 							 "auth_method": "auth",
      						 "domain": "domain1.tld",
 							 "host": "horst1.tld",
-							 "protocol": "https",
+							 "protocol": "foo",
       						 "username": "john",
       						 "password": "doe",
       						 "ip4_address": "127.0.0.1",
@@ -44,51 +44,24 @@ func unmarshalDomainProvider() []domainTestData {
   							 "ip6_host_id": "0000:0000:0000:0001",
       						 "refresh_url": "abcde",
       						 "template": "somewhere",
-      						 "request_method": "POST",
+      						 "request_method": "bar",
       						 "user_agent": "not-mozilla"
     					  }`,
 			expectedResult: Domain{
-				AuthMethod:    "auth",
-				AuthUser:      "john",
-				AuthPassword:  "doe",
-				DomainName:    "domain1.tld",
-				Host:          "horst1.tld",
-				Ip4Address:    "127.0.0.1",
-				Ip6Address:    "::1",
-				Ip6HostId:     "0000:0000:0000:0001",
-				Protocol:      "https",
-				RefreshUrl:    "abcde",
-				RequestMethod: "POST",
-				UserAgent:     "not-mozilla",
-			},
-		},
-		{
-			givenType: "json",
-			givenConfig: `{
-     						 "domain": "domain1.tld",
-							 "host": "horst1.tld",
-							 "protocol": "https",
-      						 "username": "john",
-      						 "password": "doe",
-      						 "ip4_address": "127.0.0.1",
-							 "ip6_address": "::1",
-  							 "ip6_host_id": "0000:0000:0000:0001",
-      						 "refresh_url": "abcde",
-      						 "template": "somewhere"
-    					  }`,
-			expectedResult: Domain{
-				AuthMethod:    "basic",
-				AuthUser:      "john",
-				AuthPassword:  "doe",
-				DomainName:    "domain1.tld",
-				Host:          "horst1.tld",
-				Ip4Address:    "127.0.0.1",
-				Ip6Address:    "::1",
-				Ip6HostId:     "0000:0000:0000:0001",
-				Protocol:      "https",
-				RefreshUrl:    "abcde",
-				RequestMethod: "GET",
-				UserAgent:     "yddns/dev",
+				Template: Template{
+					AuthMethod:    "auth",
+					Host:          "horst1.tld",
+					Protocol:      "foo",
+					RefreshUrl:    "abcde",
+					RequestMethod: "bar",
+					UserAgent:     "not-mozilla",
+				},
+				AuthUser:     "john",
+				AuthPassword: "doe",
+				DomainName:   "domain1.tld",
+				Ip4Address:   "127.0.0.1",
+				Ip6Address:   "::1",
+				Ip6HostId:    "0000:0000:0000:0001",
 			},
 		},
 	}

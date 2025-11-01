@@ -1,0 +1,6 @@
+{
+  "auth_method": "basic",
+  "host": "members.dyndns.org",
+  "protocol": "https",
+  "refresh_url": "<protocol>://<host>/nic/update?hostname=<domain>&myip=<ip4>,<ip6>&wildcard=NOCHG&mx=NOCHG&backmx=NOCHG"
+}
