@@ -4,9 +4,9 @@ This client aims to be simple and easy to use for updating ip addresses in dyn d
 
 ## Features
 - Define static ipv4/ipv6 addresses per domain (will use it instead of identified wan ips)
-- Define ipv6 host id/interface id per domain (will use prefix + host id instead of identified wan ipv6)
+- Define ipv6 host id/interface id per domain (will use wan ipv6 prefix + host id instead of identified wan ipv6)
 - Define refresh url with placeholders per domain
-- Refresh URL templates support
+- Define refresh url templates in the config file
 - Refresh domains periodically
 - Supports http basic authentication
 
@@ -20,25 +20,36 @@ A refresh URL contains all relevant information to update the configuration for 
 | `<domain>`   | Name of your domain                                        |
 | `<ip4>`      | Placeholder for the IPv4 address                           |
 | `<ip6>`      | Placeholder for the IPv6 address                           |
-| `<username>` | Username to authenticate at the service                    |
-| `<password>` | Password to authenticate at the service                    |
+| `<username>` | Username to authenticate on the service                    |
+| `<password>` | Password to authenticate on the service                    |
+
+## Domain config properties
+For providing the best flexibility, the following configurable domain properties are available:
+
+| Property       | Default value | Description                                                                                         |
+|----------------|---------------|-----------------------------------------------------------------------------------------------------|
+| refresh_url    | ""            | The refresh url or a template name. Template names must be prefixed with a colon (ie `":dyndns2"`). |
+| username       | ""            | Used for authentication on the service. Can be used in the refresh URL as well.                     |
+| password       | ""            | Used for authentication on the service. Can be used in the refresh URL as well.                     |
+| domain         | ""            | Can be used in the refresh URL, mostly used in combination with templates.                          |
+| protocol       | "https"       | Can be used in the refresh URL, mostly used in combination with templates.                          | 
+| host           | ""            | Can be used in the refresh URL, mostly used in combination with templates.                          |
+| ip4_address    | ""            | A static IPv4 address can be provided.                                                              |
+| ip6_address    | ""            | A static IPv6 address can be provided.                                                              |
+| ip6_host_id    | ""            | A host id/interface id can be provided. Will be ignored in case `ip6_address` is defined.           |
+| request_method | "GET"         | Change the HTTP request method if necessary.                                                        |
 
 ## Usage with config file (`refresh`)
 A config file has to be defined with the required data for refreshing one or more domain configurations.
 
 Refresh url templates can be defined in the config file as well, which makes reusability very easy.
 
-The config file must have the name `config.(toml|json|yaml)` and has to be placed in `/etc/yddns`, `~/.yddns` or in the same directory where the executable resides.
-
+The config file must have the name `config.ext`, where `ext` represents the extension of a supported format. It has to be placed in `/etc/yddns`, `~/.yddns` or in the same directory where the executable resides.
 >[!NOTE]
 > Supported config formats are `json`, `toml` and `yaml`.
->
 
 >[!TIP]
 > Check `config.toml.dist` for an example config.
-
->[!TIP]
-> A different location for the config can be used via the flag `--config-file`.
 ### Help
 ```
 Usage:
@@ -51,11 +62,11 @@ Flags:
 
 ```
 ### Examples
-#### Update domains one time
+#### Update domain configurations one time
 ```shell
 $ yddns refresh
 ```
-#### Update domains periodically with an interval of 1800 seconds
+#### Update domain configurations periodically with an interval of 1800 seconds
 ```shell
 $ yddns refresh -p -i 1800
 ```

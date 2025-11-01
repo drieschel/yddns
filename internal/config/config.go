@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	AppName          = "yddns"
+	AppName = "yddns"
+
 	AuthMethodBasic  = "basic"
 	AuthMethodBearer = "bearer"
 
@@ -55,7 +56,6 @@ const (
 
 var (
 	Dirs                    = []string{fmt.Sprintf("/etc/%s", AppName), fmt.Sprintf("%s/.%s", AppName, getHomeDir()), getExecDir()}
-	DomainDefaultValues     = map[string]interface{}{KeyAuthMethod: DefaultAuthMethod, KeyRequestMethod: DefaultRequestMethod, KeyProtocol: DefaultProtocol, KeyUserAgent: CreateDefaultUserAgent("dev")}
 	FilePath                = ""
 	SupportedAuthMethods    = []string{AuthMethodBasic, AuthMethodBearer}
 	SupportedProtocols      = []string{ProtocolHttp, ProtocolHttps}
