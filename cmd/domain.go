@@ -24,11 +24,10 @@ var (
 	flagUsername      = createFlagName(config.KeyUsername)
 )
 
-// domainCmd represents the domain command
 var domainCmd = &cobra.Command{
-	Use:   "domain [refresh url | template name]",
-	Short: "Refresh a domain via cli",
-	Long:  `Refresh a single domain via command"`,
+	Use:   "domain [refresh-url | :template-name]",
+	Short: "Refresh a domain config via cli",
+	Long:  `Refresh a single domain config via command"`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		domain := createDomain(cmd, args[0])
@@ -64,6 +63,8 @@ func init() {
 	domainCmd.Flags().String(flagRequestMethod, config.DefaultRequestMethod, "Set request method of the service")
 	domainCmd.Flags().String(flagUserAgent, "", "Set user agent in refresh requests")
 	domainCmd.Flags().String(flagUsername, "", "Set username used to authenticate [<username>]")
+
+	_ = domainCmd.Flags().MarkHidden(flagAuthMethod)
 }
 
 func createDomain(cmd *cobra.Command, refreshUrl string) *config.Domain {

@@ -23,6 +23,7 @@ const (
 	RequestMethodGet  = "GET"
 	RequestMethodPost = "POST"
 
+	DefaultAppVersion           = "dev"
 	DefaultAuthMethod           = AuthMethodBasic
 	DefaultRequestMethod        = RequestMethodGet
 	DefaultProtocol             = ProtocolHttps
@@ -69,9 +70,9 @@ type Config struct {
 }
 
 func NewConfig(appVersion string, fs afero.Fs) *Config {
-	c := &Config{AppVersion: appVersion, Domains: []Domain{}}
+	c := &Config{AppVersion: appVersion, Domains: []Domain{}, Templates: map[string]Template{}}
 
-	err := readTemplates(fs, c)
+	err := readFileTemplates(fs, c)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -92,7 +93,7 @@ func NewFileConfig(appVersion string, fs afero.Fs) *Config {
 
 func (c *Config) GetAppVersion() string {
 	if c.AppVersion == "" {
-		return "dev"
+		return DefaultAppVersion
 	}
 
 	return c.AppVersion
@@ -162,8 +163,7 @@ func getExecDir() string {
 	return execDir
 }
 
-func readTemplates(fs afero.Fs, c *Config) error {
-	templates := map[string]Template{}
+func readFileTemplates(fs afero.Fs, c *Config) error {
 	for _, dir := range Dirs {
 		templatesDir := filepath.Join(dir, DirNameTemplates)
 		if exists, _ := afero.DirExists(fs, templatesDir); !exists {
@@ -180,6 +180,10 @@ func readTemplates(fs afero.Fs, c *Config) error {
 		for _, file := range templateFiles {
 			templateName, _ := strings.CutSuffix(file, ".json")
 
+			if _, exist := c.Templates[templateName]; exist {
+				continue
+			}
+
 			var data []byte
 			data, err = io.ReadFile(file)
 			if err != nil {
@@ -192,13 +196,11 @@ func readTemplates(fs afero.Fs, c *Config) error {
 				return err
 			}
 
-			templates[templateName] = *template
+			c.Templates[templateName] = *template
 		}
 
 		break
 	}
-
-	c.Templates = templates
 
 	return nil
 }

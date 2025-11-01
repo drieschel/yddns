@@ -32,4 +32,12 @@ domain="second.fancy.tld"
 username="so-important"
 password="top-secret"
 
-refresh_url="https://other-dyn-dns-provider.tld/refresh?user=<username>&pass=<password>&ip4address=<ip4>&ip6address=<ip6>"
+# uses template
+host="other-provider.tld"
+refresh_url=":my-provider"
+
+# define your own refresh url templates,
+# so that you can reuse them
+[templates.my-provider]
+host="my-provider.tld"
+refresh_url="<protocol>://<host>/path?hostname=<domain>&ip=<ip4>,<ip6>&some=value"

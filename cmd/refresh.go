@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	flagNameConfigFile   = "config-file"
 	flagNameInterval     = "interval"
 	flagNamePeriodically = "periodically"
 )
@@ -64,6 +65,18 @@ func init() {
 	rootCmd.AddCommand(refreshCmd)
 	refreshCmd.Flags().IntP(flagNameInterval, "i", viper.GetInt(config.KeyRefreshInterval), "Define refresh interval in seconds")
 	refreshCmd.Flags().BoolP(flagNamePeriodically, "p", false, "Refresh periodically")
+	refreshCmd.Flags().StringP(flagNameConfigFile, "c", "", "Override default config using absolute file path")
 
 	viper.SetDefault(config.KeyRefreshInterval, config.DefaultValueRefreshInterval)
+
+	cobra.OnInitialize(initConfig)
+}
+
+func initConfig() {
+	configFile, err := refreshCmd.Flags().GetString(flagNameConfigFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	config.FilePath = configFile
 }
