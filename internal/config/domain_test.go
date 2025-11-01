@@ -9,26 +9,28 @@ import (
 )
 
 func TestUnmarshalDomain(t *testing.T) {
-	for _, data := range unmarshalDomainProvider() {
-		var (
-			err          error
-			actualResult Domain
-		)
+	for _, data := range unmarshalDomainTable() {
+		t.Run("Unmarshal domain", func(t *testing.T) {
+			var (
+				err          error
+				actualResult Domain
+			)
 
-		viper.SetConfigType(data.givenType)
-		reader := strings.NewReader(data.givenConfig)
-		err = viper.ReadConfig(reader)
+			viper.SetConfigType(data.givenType)
+			reader := strings.NewReader(data.givenConfig)
+			err = viper.ReadConfig(reader)
 
-		assert.NoError(t, err)
+			assert.NoError(t, err)
 
-		err = viper.Unmarshal(&actualResult)
+			err = viper.Unmarshal(&actualResult)
 
-		assert.NoError(t, err)
-		assert.Equal(t, data.expectedResult, actualResult)
+			assert.NoError(t, err)
+			assert.Equal(t, data.expectedResult, actualResult)
+		})
 	}
 }
 
-func unmarshalDomainProvider() []domainTestData {
+func unmarshalDomainTable() []domainTestData {
 	return []domainTestData{
 		{
 			givenType: "json",
