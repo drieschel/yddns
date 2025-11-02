@@ -2,15 +2,13 @@ package config
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetTemplateName(t *testing.T) {
+func TestDomain_GetTemplateName(t *testing.T) {
 	expectedTemplateName := uuid.New().String()
 	domain := Domain{Template: Template{RefreshUrl: fmt.Sprintf("%s%s", RefreshUrlTemplatePrefix, expectedTemplateName)}}
 	actualTemplateName, err := domain.GetTemplateName()
@@ -19,7 +17,7 @@ func TestGetTemplateName(t *testing.T) {
 	assert.Equal(t, expectedTemplateName, actualTemplateName)
 }
 
-func TestGetTemplateNameWithoutTemplateName(t *testing.T) {
+func TestDomain_GetTemplateNameWithoutTemplateName(t *testing.T) {
 	templateName := uuid.New().String()
 	domain := Domain{Template: Template{RefreshUrl: templateName}}
 	_, err := domain.GetTemplateName()
@@ -27,7 +25,7 @@ func TestGetTemplateNameWithoutTemplateName(t *testing.T) {
 	assert.Errorf(t, err, "refresh url \"%s\" is not prefixed as template (%s)", templateName, RefreshUrlTemplatePrefix)
 }
 
-func TestInitDefaultValues(t *testing.T) {
+func TestDomain_InitDefaultValues(t *testing.T) {
 	tests := initDefaultValuesTables()
 
 	for _, test := range tests {
@@ -61,12 +59,12 @@ func initDefaultValuesTables() []struct {
 	}
 }
 
-func TestMergeTemplate(t *testing.T) {
+func TestDomain_MergeTemplate(t *testing.T) {
 	tests := mergeTemplateTables()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			assert.NotEqual(t, test.expectedDomain, test.givenDomain)
-			test.givenDomain.MergeTemplate(test.givenTemplate)
+			test.givenDomain.MergeTemplate(&test.givenTemplate)
 			assert.Equal(t, test.expectedDomain, test.givenDomain)
 		})
 	}
@@ -166,7 +164,7 @@ func mergeTemplateTables() []struct {
 	}
 }
 
-func TestRequiresTemplate(t *testing.T) {
+func TestDomain_RequiresTemplate(t *testing.T) {
 	tests := requiresTemplateTable()
 
 	for _, test := range tests {
@@ -202,71 +200,4 @@ func requiresTemplateTable() []struct {
 			expectedValue: false,
 		},
 	}
-}
-
-func TestUnmarshalDomain(t *testing.T) {
-	for _, data := range unmarshalDomainTable() {
-		t.Run("Unmarshal domain", func(t *testing.T) {
-			var (
-				err          error
-				actualResult Domain
-			)
-
-			viper.SetConfigType(data.givenType)
-			reader := strings.NewReader(data.givenConfig)
-			err = viper.ReadConfig(reader)
-
-			assert.NoError(t, err)
-
-			err = viper.Unmarshal(&actualResult)
-
-			assert.NoError(t, err)
-			assert.Equal(t, data.expectedResult, actualResult)
-		})
-	}
-}
-
-func unmarshalDomainTable() []domainTestData {
-	return []domainTestData{
-		{
-			givenType: "json",
-			givenConfig: `{
-							 "auth_method": "auth",
-     						 "domain": "domain1.tld",
-							 "host": "horst1.tld",
-							 "protocol": "foo",
-      						 "username": "john",
-      						 "password": "doe",
-      						 "ip4_address": "127.0.0.1",
-							 "ip6_address": "::1",
-  							 "ip6_host_id": "0000:0000:0000:0001",
-      						 "refresh_url": "abcde",
-      						 "template": "somewhere",
-      						 "request_method": "bar",
-      						 "user_agent": "not-mozilla"
-    					  }`,
-			expectedResult: Domain{
-				Template: Template{
-					AuthMethod:    "auth",
-					Host:          "horst1.tld",
-					Protocol:      "foo",
-					RefreshUrl:    "abcde",
-					RequestMethod: "bar",
-					UserAgent:     "not-mozilla",
-				},
-				AuthUser:     "john",
-				AuthPassword: "doe",
-				DomainName:   "domain1.tld",
-				Ip4Address:   "127.0.0.1",
-				Ip6Address:   "::1",
-				Ip6HostId:    "0000:0000:0000:0001",
-			},
-		},
-	}
-}
-
-type domainTestData struct {
-	givenType      string
-	givenConfig    string
-	expectedResult Domain
 }

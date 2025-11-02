@@ -1,0 +1,8 @@
+{
+  "auth_method": "x1",
+  "host": "x2",
+  "protocol": "x3",
+  "refresh_url": "x4",
+  "request_method": "x5",
+  "user_agent": "x6"
+}

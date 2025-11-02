@@ -50,7 +50,7 @@ const (
 	KeyIp6 = "ip6"
 
 	DirNameTemplates = "templates"
-	
+
 	RefreshUrlTemplatePrefix = ":"
 )
 
@@ -64,15 +64,15 @@ var (
 
 type Config struct {
 	AppVersion      string
-	Domains         []Domain            `mapstructure:"domains"`
-	Templates       map[string]Template `mapstructure:"templates"`
-	RefreshInterval int                 `mapstructure:"refresh_interval"`
+	Domains         []*Domain            `mapstructure:"domains"`
+	Templates       map[string]*Template `mapstructure:"templates"`
+	RefreshInterval int                  `mapstructure:"refresh_interval"`
 }
 
-func NewConfig(appVersion string, fs afero.Fs) *Config {
-	c := &Config{AppVersion: appVersion, Domains: []Domain{}, Templates: map[string]Template{}, RefreshInterval: DefaultRefreshInterval}
+func NewConfig(appVersion string) *Config {
+	c := &Config{AppVersion: appVersion, Domains: []*Domain{}, Templates: map[string]*Template{}, RefreshInterval: DefaultRefreshInterval}
 
-	err := readFileTemplates(fs, c)
+	err := readFileTemplates(c)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -80,8 +80,8 @@ func NewConfig(appVersion string, fs afero.Fs) *Config {
 	return c
 }
 
-func NewFileConfig(appVersion string, fs afero.Fs) *Config {
-	c := NewConfig(appVersion, fs)
+func NewFileConfig(appVersion string) *Config {
+	c := NewConfig(appVersion)
 
 	err := readFileConfig(c)
 	if err != nil {
@@ -103,30 +103,12 @@ func (c *Config) GetDefaultUserAgent() string {
 	return CreateDefaultUserAgent(c.GetAppVersion())
 }
 
-func (c *Config) GetTemplate(name string) (Template, error) {
+func (c *Config) GetTemplate(name string) (*Template, error) {
 	if template, ok := c.Templates[name]; ok {
 		return template, nil
 	}
 
-	return Template{}, fmt.Errorf("template \"%s\" not found", name)
-}
-
-func CreateDefaultUserAgent(version string) string {
-	return fmt.Sprintf("%s/%s", AppName, version)
-}
-
-func (c *Config) PrepareAndGetDomains() ([]Domain, error) {
-	var domains []Domain
-	for _, d := range c.Domains {
-		err := c.PrepareDomain(&d)
-		if err != nil {
-			return domains, err
-		}
-
-		domains = append(domains, d)
-	}
-
-	return domains, nil
+	return &Template{}, fmt.Errorf("template \"%s\" not found", name)
 }
 
 func (c *Config) PrepareDomain(d *Domain) error {
@@ -143,6 +125,24 @@ func (c *Config) PrepareDomain(d *Domain) error {
 	d.InitDefaultValues(c.GetAppVersion())
 
 	return nil
+}
+
+func (c *Config) PrepareAndGetDomains() ([]*Domain, error) {
+	var domains []*Domain
+	for _, d := range c.Domains {
+		err := c.PrepareDomain(d)
+		if err != nil {
+			return domains, err
+		}
+
+		domains = append(domains, d)
+	}
+
+	return domains, nil
+}
+
+func CreateDefaultUserAgent(version string) string {
+	return fmt.Sprintf("%s/%s", AppName, version)
 }
 
 func getHomeDir() string {
@@ -163,7 +163,8 @@ func getExecDir() string {
 	return execDir
 }
 
-func readFileTemplates(fs afero.Fs, c *Config) error {
+func readFileTemplates(c *Config) error {
+	fs := afero.NewOsFs()
 	for _, dir := range Dirs {
 		templatesDir := filepath.Join(dir, DirNameTemplates)
 		if exists, _ := afero.DirExists(fs, templatesDir); !exists {
@@ -196,7 +197,7 @@ func readFileTemplates(fs afero.Fs, c *Config) error {
 				return err
 			}
 
-			c.Templates[templateName] = *template
+			c.Templates[templateName] = template
 		}
 
 		break

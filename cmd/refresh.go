@@ -31,7 +31,7 @@ var refreshCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		cfg := config.NewFileConfig(version, fs)
+		cfg := config.NewFileConfig(version)
 
 		domains, err := cfg.PrepareAndGetDomains()
 		if err != nil {
@@ -47,7 +47,7 @@ var refreshCmd = &cobra.Command{
 		for {
 			client.Clear()
 			for _, domain := range domains {
-				response, err := client.Refresh(&domain)
+				response, err := client.Refresh(domain)
 				if err != nil {
 					log.Printf("An error occurred when refreshing %s: %s\n", domain.DomainName, err)
 				} else {

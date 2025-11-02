@@ -41,9 +41,9 @@ func (d *Domain) InitDefaultValues(appVersion string) {
 	}
 }
 
-func (d *Domain) MergeTemplate(t Template) {
-	tType := reflect.TypeOf(t)
-	tValue := reflect.ValueOf(t)
+func (d *Domain) MergeTemplate(t *Template) {
+	tType := reflect.TypeOf(*t)
+	tValue := reflect.ValueOf(*t)
 	dValue := reflect.ValueOf(&d.Template).Elem()
 
 	d.RefreshUrl = ""

@@ -31,7 +31,7 @@ var domainCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		domain := createDomain(cmd, args[0])
-		cfg := config.NewConfig(version, fs)
+		cfg := config.NewConfig(version)
 
 		err := cfg.PrepareDomain(domain)
 		if err != nil {
