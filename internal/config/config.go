@@ -24,11 +24,11 @@ const (
 	RequestMethodGet  = "GET"
 	RequestMethodPost = "POST"
 
-	DefaultAppVersion           = "dev"
-	DefaultAuthMethod           = AuthMethodBasic
-	DefaultRequestMethod        = RequestMethodGet
-	DefaultProtocol             = ProtocolHttps
-	DefaultValueRefreshInterval = 600
+	DefaultAppVersion      = "dev"
+	DefaultAuthMethod      = AuthMethodBasic
+	DefaultRequestMethod   = RequestMethodGet
+	DefaultProtocol        = ProtocolHttps
+	DefaultRefreshInterval = 60
 
 	KeyDomains         = "domains"
 	KeyRefreshInterval = "refresh_interval"
@@ -50,7 +50,7 @@ const (
 	KeyIp6 = "ip6"
 
 	DirNameTemplates = "templates"
-
+	
 	RefreshUrlTemplatePrefix = ":"
 )
 
@@ -70,7 +70,7 @@ type Config struct {
 }
 
 func NewConfig(appVersion string, fs afero.Fs) *Config {
-	c := &Config{AppVersion: appVersion, Domains: []Domain{}, Templates: map[string]Template{}}
+	c := &Config{AppVersion: appVersion, Domains: []Domain{}, Templates: map[string]Template{}, RefreshInterval: DefaultRefreshInterval}
 
 	err := readFileTemplates(fs, c)
 	if err != nil {

@@ -57,10 +57,9 @@ Usage:
   yddns refresh [flags]
 
 Flags:
-  -c, --config-file string   Override default config using absolute file path
-  -i, --interval int         Define refresh interval in seconds
-  -p, --periodically         Refresh periodically
-
+  -c, --config-file string     Override default config using absolute file path
+  -p, --periodically           Refresh periodically
+  -i, --refresh-interval int   Define refresh interval in seconds
 ```
 ### Examples
 #### Update domain configurations one time
