@@ -8,7 +8,7 @@ This client aims to be simple and easy to use for updating ip addresses in dyn d
 - Define refresh url with placeholders per domain
 - Define refresh url templates in the config file
 - Refresh domains periodically
-- Supports http basic authentication
+- Supports authentication methods basic and bearer
 
 ## Refresh URL
 A refresh URL contains all relevant information to update the configuration for a domain. It can consist of placeholders. The following placeholders are available:

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +16,6 @@ func TestConfig_NewFileConfig(t *testing.T) {
 	cfg := NewFileConfig("42")
 
 	assert.Equal(t, 42, cfg.RefreshInterval)
-
 	assert.Equal(t, 1, len(cfg.Domains))
 
 	//All domain values are getting properly unmarshalled
@@ -64,8 +64,9 @@ func TestConfig_GetAppVersion(t *testing.T) {
 }
 
 func TestConfig_GetDefaultUserAgent(t *testing.T) {
-	cfg := &Config{AppVersion: "42.0"}
-	assert.Equal(t, "yddns/42.0", cfg.GetDefaultUserAgent())
+	version := uuid.New().String()
+	cfg := &Config{AppVersion: version}
+	assert.Equal(t, fmt.Sprintf("yddns/%s", version), cfg.GetDefaultUserAgent())
 }
 
 func TestConfig_GetTemplate(t *testing.T) {
