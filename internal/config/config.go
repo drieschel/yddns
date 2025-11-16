@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/drieschel/yddns/internal/cache"
 	"github.com/spf13/afero"
 	"github.com/spf13/viper"
 )
@@ -49,13 +49,14 @@ const (
 	KeyIp4 = "ip4"
 	KeyIp6 = "ip6"
 
+	DirNameCache     = "cache"
 	DirNameTemplates = "templates"
 
 	RefreshUrlTemplatePrefix = ":"
 )
 
 var (
-	Dirs                    = []string{fmt.Sprintf("/etc/%s", AppName), fmt.Sprintf("%s/.%s", AppName, getHomeDir()), getExecDir()}
+	Dirs                    = []string{fmt.Sprintf("/etc/%s", AppName), determineAppDir()}
 	FilePath                = ""
 	SupportedAuthMethods    = []string{AuthMethodBasic, AuthMethodBearer}
 	SupportedProtocols      = []string{ProtocolHttp, ProtocolHttps}
@@ -63,6 +64,7 @@ var (
 )
 
 type Config struct {
+	AppDir          string
 	AppVersion      string
 	Domains         []*Domain            `mapstructure:"domains"`
 	Templates       map[string]*Template `mapstructure:"templates"`
@@ -70,7 +72,13 @@ type Config struct {
 }
 
 func NewConfig(appVersion string) *Config {
-	c := &Config{AppVersion: appVersion, Domains: []*Domain{}, Templates: map[string]*Template{}, RefreshInterval: DefaultRefreshInterval}
+	c := &Config{
+		AppDir:          determineAppDir(),
+		AppVersion:      appVersion,
+		Domains:         []*Domain{},
+		Templates:       map[string]*Template{},
+		RefreshInterval: DefaultRefreshInterval,
+	}
 
 	err := readFileTemplates(c)
 	if err != nil {
@@ -141,31 +149,17 @@ func (c *Config) PrepareAndGetDomains() ([]*Domain, error) {
 	return domains, nil
 }
 
-func CreateDefaultUserAgent(version string) string {
-	return fmt.Sprintf("%s/%s", AppName, version)
-}
+func (c *Config) CreateFileCache(expirySeconds int) cache.Cache {
+	cacheDir := fmt.Sprintf("%s/%s", c.AppDir, DirNameCache)
 
-func getHomeDir() string {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return homeDir
-}
-
-func getExecDir() string {
-	execDir, err := filepath.Abs("./")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return execDir
+	return cache.NewFileCache(cacheDir, expirySeconds)
 }
 
 func readFileTemplates(c *Config) error {
 	fs := afero.NewOsFs()
-	for _, dir := range Dirs {
+
+	for i := len(Dirs) - 1; i >= 0; i-- {
+		dir := Dirs[i]
 		templatesDir := filepath.Join(dir, DirNameTemplates)
 		if exists, _ := afero.DirExists(fs, templatesDir); !exists {
 			continue
@@ -199,8 +193,6 @@ func readFileTemplates(c *Config) error {
 
 			c.Templates[templateName] = template
 		}
-
-		break
 	}
 
 	return nil
@@ -228,4 +220,22 @@ func readFileConfig(c *Config) error {
 	}
 
 	return nil
+}
+
+func CreateDefaultUserAgent(version string) string {
+	return fmt.Sprintf("%s/%s", AppName, version)
+}
+
+func determineAppDir() string {
+	execDir, err := filepath.Abs("./")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	parentDir, dirName := filepath.Split(execDir)
+	if dirName == "bin" {
+		return parentDir
+	}
+
+	return execDir
 }

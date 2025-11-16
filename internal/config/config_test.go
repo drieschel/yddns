@@ -37,8 +37,8 @@ func TestConfig_NewFileConfig(t *testing.T) {
 	assert.Contains(t, cfg.Templates, "stat-dns")
 	assert.Contains(t, cfg.Templates, "provider")
 
-	//Template in config.json wins over template in
-	//dedicated file and all template values are getting properly unmarshalled
+	//Template in config.ext wins over template in dedicated file
+	//and all template values are getting properly unmarshalled
 	assert.Equal(t, "y1", cfg.Templates["yddns"].AuthMethod)
 	assert.Equal(t, "y2", cfg.Templates["yddns"].Host)
 	assert.Equal(t, "y3", cfg.Templates["yddns"].Protocol)

@@ -6,3 +6,6 @@ config.yml
 dist
 yddns
 yddns.exe
+cache/*
+!cache/.gitkeep
+!internal/testdata/config.json

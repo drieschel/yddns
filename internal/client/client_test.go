@@ -6,25 +6,34 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
+	"github.com/drieschel/yddns/internal/cache"
 	"github.com/drieschel/yddns/internal/config"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestClient_Refresh(t *testing.T) {
-	for name, domain := range RefreshTable() {
-		t.Run(name, func(t *testing.T) {
-			expectedResponse := uuid.New().String()
+func TestClient_RefreshWithoutCache(t *testing.T) {
+	for _, test := range refreshTable() {
+		t.Run(test.name, func(t *testing.T) {
+			providerResponse := uuid.New().String()
+			expectedResponse := fmt.Sprintf("refreshed - provider responded: \"%s\"", providerResponse)
 
-			request := createHttpRequest(domain)
-			response := createHttpResponse(expectedResponse)
+			cacheItem := cache.NewItem(test.expectedCacheKey, nil)
+
+			cacheMock := cache.NewMockCache(t)
+			cacheMock.EXPECT().Get(test.expectedCacheKey).Return(cacheItem, nil).Once()
+			cacheMock.EXPECT().Set(cacheItem).Return(nil).Once()
+
+			request := createHttpRequest(test.domain)
+			response := createHttpResponse(providerResponse)
 			httpClientMock := NewMockHttpClient(t)
 			httpClientMock.EXPECT().Do(request).Return(response, nil).Once()
 
-			client := Client{httpClient: httpClientMock}
+			client := *NewClient(cacheMock, httpClientMock)
 
-			actualResponse, err := client.Refresh(&domain)
+			actualResponse, err := client.Refresh(&test.domain)
 
 			assert.NoError(t, err)
 			assert.Equal(t, expectedResponse, actualResponse)
@@ -32,21 +41,75 @@ func TestClient_Refresh(t *testing.T) {
 	}
 }
 
-func RefreshTable() map[string]config.Domain {
-	return map[string]config.Domain{
-		"basic auth":     {Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "basic", UserAgent: "test"}, AuthUser: "test", AuthPassword: "pass"},
-		"basic no auth ": {Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "basic", UserAgent: "test"}, AuthUser: "", AuthPassword: ""},
-		"bearer auth":    {Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "bearer", UserAgent: "test"}, AuthUser: "not used", AuthPassword: "token"},
-		"bearer no auth": {Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "bearer", UserAgent: "test"}, AuthUser: "not used", AuthPassword: ""},
-		"no auth":        {Template: config.Template{RefreshUrl: uuid.New().String(), AuthMethod: "", UserAgent: "test"}, AuthUser: "test", AuthPassword: "foo"},
+func TestClient_RefreshWithValidCacheItem(t *testing.T) {
+	for _, test := range refreshTable() {
+		t.Run(test.name, func(t *testing.T) {
+			expectedResponse := "skipped refresh - configuration not changed"
+
+			//cache item must be valid hack
+			cacheItem := cache.NewItemWithCustomExpiry(test.expectedCacheKey, nil, 0)
+			cacheItem.ModifiedAt = &time.Time{}
+
+			cacheMock := cache.NewMockCache(t)
+			cacheMock.EXPECT().Get(test.expectedCacheKey).Return(cacheItem, nil).Once()
+			cacheMock.EXPECT().Set(cacheItem).Return(nil).Once()
+
+			httpClientMock := NewMockHttpClient(t)
+
+			client := *NewClient(cacheMock, httpClientMock)
+
+			actualResponse, err := client.Refresh(&test.domain)
+
+			assert.NoError(t, err)
+			assert.Equal(t, expectedResponse, actualResponse)
+		})
+	}
+}
+
+func refreshTable() []struct {
+	name             string
+	domain           config.Domain
+	expectedCacheKey string
+} {
+	return []struct {
+		name             string
+		domain           config.Domain
+		expectedCacheKey string
+	}{
+		{
+			name:             "basic auth",
+			domain:           config.Domain{Template: config.Template{RefreshUrl: "abcd", AuthMethod: "basic", UserAgent: "test"}, AuthUser: "test", AuthPassword: "pass"},
+			expectedCacheKey: "be5d97fbba99da6caa52e066aab18708",
+		},
+		{
+			name:             "basic no auth",
+			domain:           config.Domain{Template: config.Template{RefreshUrl: "efgh", AuthMethod: "basic", UserAgent: "test"}, AuthUser: "", AuthPassword: ""},
+			expectedCacheKey: "d6e0d8f7e3ea92041a999aa36594b3b4",
+		},
+		{
+			name:             "bearer auth",
+			domain:           config.Domain{Template: config.Template{RefreshUrl: "ijkl", AuthMethod: "bearer", UserAgent: "test"}, AuthUser: "not used", AuthPassword: "token"},
+			expectedCacheKey: "2d95adbb807d114002059a79d14dc501",
+		},
+		{
+			name:             "bearer no auth",
+			domain:           config.Domain{Template: config.Template{RefreshUrl: "mnop", AuthMethod: "bearer", UserAgent: "test"}, AuthUser: "not used", AuthPassword: ""},
+			expectedCacheKey: "d5ebe2451342aac0ecea8f1349d0e9fa",
+		},
+		{
+			name:             "no auth",
+			domain:           config.Domain{Template: config.Template{RefreshUrl: "qrst", AuthMethod: "", UserAgent: "test"}, AuthUser: "test", AuthPassword: "foo"},
+			expectedCacheKey: "4ed696325abba4fdad4c206ebf609981",
+		},
 	}
 }
 
 func TestClient_BuildRefreshUrl(t *testing.T) {
 	for _, data := range refreshUrlTable() {
 		t.Run(data.name, func(t *testing.T) {
+			cacheMock := cache.NewMockCache(t)
 			httpClient := NewMockHttpClient(t)
-			client := NewClient(httpClient)
+			client := NewClient(cacheMock, httpClient)
 
 			if data.wanIp4 != "" {
 				httpClient.EXPECT().Get(IdentUrlIpv4).Return(createHttpResponse(data.wanIp4), nil).Once()
@@ -67,8 +130,9 @@ func TestClient_BuildRefreshUrl(t *testing.T) {
 func TestClient_BuildReplacements(t *testing.T) {
 	for _, data := range refreshUrlTable() {
 		t.Run(data.name, func(t *testing.T) {
+			cacheMock := cache.NewMockCache(t)
 			httpClient := NewMockHttpClient(t)
-			client := NewClient(httpClient)
+			client := NewClient(cacheMock, httpClient)
 
 			if data.wanIp4 != "" {
 				httpClient.EXPECT().Get(IdentUrlIpv4).Return(createHttpResponse(data.wanIp4), nil).Once()

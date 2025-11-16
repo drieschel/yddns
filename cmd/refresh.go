@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/drieschel/yddns/internal/cache"
 	"github.com/drieschel/yddns/internal/client"
 	"github.com/drieschel/yddns/internal/config"
 	"github.com/spf13/cobra"
@@ -42,7 +43,12 @@ var refreshCmd = &cobra.Command{
 			refreshInterval = cfg.RefreshInterval
 		}
 
-		client := client.NewClient(&http.Client{})
+		cacheExpirySeconds := cache.ExpirySecondsDefault
+		if periodically {
+			cacheExpirySeconds += refreshInterval
+		}
+
+		client := client.NewClient(cfg.CreateFileCache(cacheExpirySeconds), &http.Client{})
 
 		for {
 			client.Clear()
@@ -51,7 +57,7 @@ var refreshCmd = &cobra.Command{
 				if err != nil {
 					log.Printf("An error occurred when refreshing %s: %s\n", domain.DomainName, err)
 				} else {
-					log.Printf("%s refreshed, provider responded \"%s\" ", domain.DomainName, response)
+					log.Printf("%s: %s", domain.DomainName, response)
 				}
 			}
 

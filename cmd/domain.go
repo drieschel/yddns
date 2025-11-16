@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/drieschel/yddns/internal/cache"
 	"github.com/drieschel/yddns/internal/client"
 	"github.com/drieschel/yddns/internal/config"
 	"github.com/spf13/cobra"
@@ -38,7 +39,7 @@ var domainCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		client := client.NewClient(&http.Client{})
+		client := client.NewClient(cfg.CreateFileCache(cache.ExpirySecondsDefault), &http.Client{})
 
 		response, err := client.Refresh(domain)
 		if err != nil {

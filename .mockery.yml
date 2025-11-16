@@ -1,6 +1,6 @@
 all: false
 dir: '{{.InterfaceDir}}'
-filename: mocks_test.go
+filename: genmocks.go
 force-file-write: true
 formatter: goimports
 include-auto-generated: false
@@ -12,6 +12,9 @@ require-template-schema-exists: true
 template: testify
 template-schema: '{{.Template}}.schema.json'
 packages:
+  github.com/drieschel/yddns/internal/cache:
+    config:
+      all: true
   github.com/drieschel/yddns/internal/client:
     config:
       all: true

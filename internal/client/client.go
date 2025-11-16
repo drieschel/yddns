@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/drieschel/yddns/internal/cache"
 	"github.com/drieschel/yddns/internal/config"
 )
 
@@ -21,62 +22,76 @@ type HttpClient interface {
 }
 
 type Client struct {
+	cache      cache.Cache
 	httpClient HttpClient
 	wanIp4     string
 	wanIp6     string
 }
 
-func NewClient(httpClient HttpClient) *Client {
-	return &Client{httpClient: httpClient}
+func NewClient(cache cache.Cache, httpClient HttpClient) *Client {
+	return &Client{cache: cache, httpClient: httpClient}
 }
 
 func (c *Client) Refresh(domain *config.Domain) (string, error) {
-	url, err := c.BuildRefreshUrl(domain)
+	cacheKey := createCacheKey(domain)
+	cacheItem, err := c.cache.Get(cacheKey)
 	if err != nil {
 		return "", err
 	}
 
-	request, err := http.NewRequest(domain.RequestMethod, url, nil)
-	if err != nil {
-		return "", err
-	}
-
-	switch domain.AuthMethod {
-	case config.AuthMethodBasic:
-		if domain.AuthUser != "" && domain.AuthPassword != "" {
-			request.SetBasicAuth(domain.AuthUser, domain.AuthPassword)
+	responseString := "skipped refresh - configuration not changed"
+	if !cacheItem.IsValid() {
+		url, err := c.BuildRefreshUrl(domain)
+		if err != nil {
+			return "", err
 		}
 
-	case config.AuthMethodBearer:
-		if domain.AuthPassword != "" {
-			request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", domain.AuthPassword))
+		request, err := http.NewRequest(domain.RequestMethod, url, nil)
+		if err != nil {
+			return "", err
+		}
+
+		switch domain.AuthMethod {
+		case config.AuthMethodBasic:
+			if domain.AuthUser != "" && domain.AuthPassword != "" {
+				request.SetBasicAuth(domain.AuthUser, domain.AuthPassword)
+			}
+
+		case config.AuthMethodBearer:
+			if domain.AuthPassword != "" {
+				request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", domain.AuthPassword))
+			}
+		}
+
+		request.Header.Set("User-Agent", domain.UserAgent)
+
+		response, err := c.httpClient.Do(request)
+		if err != nil {
+			return "", err
+		}
+
+		defer response.Body.Close()
+
+		var responseBody []byte
+		responseBody, err = io.ReadAll(response.Body)
+		if err != nil {
+			return "", err
+		}
+
+		responseString = fmt.Sprintf("refreshed - provider responded: \"%s\"", strings.Trim(string(responseBody), " "))
+		if response.StatusCode > 204 {
+			if responseString == "" {
+				responseString = response.Status
+			}
+
+			return "", errors.New(fmt.Sprintf("%s", responseString))
 		}
 	}
 
-	request.Header.Set("User-Agent", domain.UserAgent)
-
-	response, err := c.httpClient.Do(request)
+	err = c.cache.Set(cacheItem)
 	if err != nil {
-		return "", err
+		return responseString, err
 	}
-
-	var responseBody []byte
-	responseBody, err = io.ReadAll(response.Body)
-	if err != nil {
-		return "", err
-	}
-
-	responseString := strings.Trim(string(responseBody), " ")
-
-	if response.StatusCode > 204 {
-		if responseString == "" {
-			responseString = response.Status
-		}
-
-		return "", errors.New(fmt.Sprintf("%s", responseString))
-	}
-
-	defer response.Body.Close()
 
 	return responseString, nil
 }
@@ -227,4 +242,10 @@ func (r *Replacements) SetDefault(key string, value string) *Replacements {
 
 func createReplaceKey(key string) string {
 	return fmt.Sprintf("<%s>", key)
+}
+
+func createCacheKey(domain *config.Domain) string {
+	key := fmt.Sprintf("%+v", domain)
+
+	return cache.CreateHashedKey(key)
 }
