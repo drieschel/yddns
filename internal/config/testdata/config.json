@@ -1,0 +1,37 @@
+{
+  "refresh_interval": 42,
+  "domains": [
+    {
+      "auth_method": "a1",
+      "host": "a2",
+      "protocol": "a3",
+      "domain": "a4",
+      "ip4_address": "a5",
+      "ip6_address": "a6",
+      "ip6_host_id": "a7",
+      "password": "a8",
+      "refresh_url": "a9",
+      "username": "a10",
+      "user_agent": "a11",
+      "request_method": "a12"
+    }
+  ],
+  "templates": {
+    "stat-dns": {
+      "auth_method": "s1",
+      "host": "s2",
+      "protocol": "s3",
+      "refresh_url": "s4",
+      "request_method": "s5",
+      "user_agent": "s6"
+    },
+    "yddns": {
+      "auth_method": "y1",
+      "host": "y2",
+      "protocol": "y3",
+      "refresh_url": "y4",
+      "request_method": "y5",
+      "user_agent": "y6"
+    }
+  }
+}

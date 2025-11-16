@@ -8,4 +8,4 @@ yddns
 yddns.exe
 cache/*
 !cache/.gitkeep
-!internal/testdata/config.json
+!internal/config/testdata/config.json
