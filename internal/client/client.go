@@ -40,13 +40,15 @@ func (c *Client) Refresh(domain *config.Domain) (string, error) {
 	}
 
 	responseString := "skipped refresh - configuration not changed"
-	if !cacheItem.IsValid() {
-		url, err := c.BuildRefreshUrl(domain)
+	if !c.cache.IsValid(*cacheItem) {
+		var url string
+		url, err = c.BuildRefreshUrl(domain)
 		if err != nil {
 			return "", err
 		}
 
-		request, err := http.NewRequest(domain.RequestMethod, url, nil)
+		var request *http.Request
+		request, err = http.NewRequest(domain.RequestMethod, url, nil)
 		if err != nil {
 			return "", err
 		}
@@ -65,7 +67,8 @@ func (c *Client) Refresh(domain *config.Domain) (string, error) {
 
 		request.Header.Set("User-Agent", domain.UserAgent)
 
-		response, err := c.httpClient.Do(request)
+		var response *http.Response
+		response, err = c.httpClient.Do(request)
 		if err != nil {
 			return "", err
 		}

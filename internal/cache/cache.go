@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	ExpirySecondsIndefinite = 0
+	ExpirySecondsUseGlobal  = -2
+	ExpirySecondsIndefinite = -1
 	ExpirySecondsDefault    = 600
 )
 
@@ -18,6 +19,7 @@ type Cache interface {
 	Delete(key string) error
 	Get(key string) (*Item, error)
 	Set(item *Item) error
+	IsValid(item Item) bool
 }
 
 type Item struct {
@@ -29,20 +31,12 @@ type Item struct {
 }
 
 func NewItem(key string, value interface{}) *Item {
-	return NewItemWithCustomExpiry(key, value, -1)
+	return NewItemWithCustomExpiry(key, value, ExpirySecondsUseGlobal)
 }
 
 func NewItemWithCustomExpiry(key string, value interface{}, expirySeconds int) *Item {
 	now := time.Now()
 	return &Item{CreatedAt: &now, ExpirySeconds: expirySeconds, Key: key, Value: value}
-}
-
-func (i *Item) IsValid() bool {
-	if i.ModifiedAt != nil {
-		return i.ExpirySeconds == ExpirySecondsIndefinite || time.Now().Sub(*i.ModifiedAt) < time.Duration(i.ExpirySeconds)*time.Second
-	}
-
-	return false
 }
 
 type FileCache struct {
@@ -94,10 +88,6 @@ func (c *FileCache) Get(key string) (*Item, error) {
 }
 
 func (c *FileCache) Set(item *Item) error {
-	if item.ExpirySeconds < 0 {
-		item.ExpirySeconds = c.expirySeconds
-	}
-
 	now := time.Now()
 	item.ModifiedAt = &now
 
@@ -114,6 +104,18 @@ func (c *FileCache) Set(item *Item) error {
 	}
 
 	return nil
+}
+
+func (c *FileCache) IsValid(item Item) bool {
+	if item.ModifiedAt != nil {
+		if item.ExpirySeconds == ExpirySecondsUseGlobal {
+			item.ExpirySeconds = c.expirySeconds
+		}
+
+		return item.ExpirySeconds == ExpirySecondsIndefinite || time.Now().Sub(*item.ModifiedAt) < time.Duration(item.ExpirySeconds)*time.Second
+	}
+
+	return false
 }
 
 func (c *FileCache) createFilePath(key string) string {

@@ -148,6 +148,57 @@ func (_c *MockCache_Get_Call) RunAndReturn(run func(key string) (*Item, error)) 
 	return _c
 }
 
+// IsValid provides a mock function for the type MockCache
+func (_mock *MockCache) IsValid(item Item) bool {
+	ret := _mock.Called(item)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsValid")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(Item) bool); ok {
+		r0 = returnFunc(item)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// MockCache_IsValid_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsValid'
+type MockCache_IsValid_Call struct {
+	*mock.Call
+}
+
+// IsValid is a helper method to define mock.On call
+//   - item Item
+func (_e *MockCache_Expecter) IsValid(item interface{}) *MockCache_IsValid_Call {
+	return &MockCache_IsValid_Call{Call: _e.mock.On("IsValid", item)}
+}
+
+func (_c *MockCache_IsValid_Call) Run(run func(item Item)) *MockCache_IsValid_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 Item
+		if args[0] != nil {
+			arg0 = args[0].(Item)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCache_IsValid_Call) Return(b bool) *MockCache_IsValid_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *MockCache_IsValid_Call) RunAndReturn(run func(item Item) bool) *MockCache_IsValid_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Set provides a mock function for the type MockCache
 func (_mock *MockCache) Set(item *Item) error {
 	ret := _mock.Called(item)

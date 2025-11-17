@@ -5,16 +5,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/drieschel/yddns/internal/cache"
 	"github.com/drieschel/yddns/internal/client"
 	"github.com/drieschel/yddns/internal/config"
 	"github.com/spf13/cobra"
 )
 
 const (
-	flagNameConfigFile      = "config-file"
-	flagNameRefreshInterval = "refresh-interval"
-	flagNamePeriodically    = "periodically"
+	flagConfigFile      = "config-file"
+	flagRefreshInterval = "refresh-interval"
+	flagPeriodically    = "periodically"
 )
 
 var refreshCmd = &cobra.Command{
@@ -22,12 +21,12 @@ var refreshCmd = &cobra.Command{
 	Short: "Refresh ip addresses for dynamic dns domains",
 	Long:  `Refresh ip addresses for dynamic dns domains`,
 	Run: func(cmd *cobra.Command, args []string) {
-		refreshInterval, err := cmd.Flags().GetInt(flagNameRefreshInterval)
+		refreshInterval, err := cmd.Flags().GetInt(flagRefreshInterval)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		periodically, err := cmd.Flags().GetBool(flagNamePeriodically)
+		periodically, err := cmd.Flags().GetBool(flagPeriodically)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -43,12 +42,12 @@ var refreshCmd = &cobra.Command{
 			refreshInterval = cfg.RefreshInterval
 		}
 
-		cacheExpirySeconds := cache.ExpirySecondsDefault
-		if periodically {
-			cacheExpirySeconds += refreshInterval
+		cacheLifetime := cfg.CacheLifetime
+		if periodically && cacheLifetime > 0 && cacheLifetime < (refreshInterval+2*len(domains)) {
+			cacheLifetime = refreshInterval + 2*len(domains)
 		}
 
-		client := client.NewClient(cfg.CreateFileCache(cacheExpirySeconds), &http.Client{})
+		client := client.NewClient(cfg.CreateFileCache(cacheLifetime), &http.Client{})
 
 		for {
 			client.Clear()
@@ -72,15 +71,15 @@ var refreshCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(refreshCmd)
-	refreshCmd.Flags().IntP(flagNameRefreshInterval, "i", 0, "Define refresh interval in seconds")
-	refreshCmd.Flags().BoolP(flagNamePeriodically, "p", false, "Refresh periodically")
-	refreshCmd.Flags().StringP(flagNameConfigFile, "c", "", "Override default config using absolute file path")
+	refreshCmd.Flags().StringP(flagConfigFile, "c", "", "Override default config using absolute file path")
+	refreshCmd.Flags().BoolP(flagPeriodically, "p", false, "Refresh periodically")
+	refreshCmd.Flags().IntP(flagRefreshInterval, "i", 0, "Define refresh interval in seconds")
 
 	cobra.OnInitialize(initConfig)
 }
 
 func initConfig() {
-	configFile, err := refreshCmd.Flags().GetString(flagNameConfigFile)
+	configFile, err := refreshCmd.Flags().GetString(flagConfigFile)
 	if err != nil {
 		log.Fatal(err)
 	}

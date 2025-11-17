@@ -23,6 +23,8 @@ var (
 	flagRequestMethod = createFlagName(config.KeyRequestMethod)
 	flagUserAgent     = createFlagName(config.KeyUserAgent)
 	flagUsername      = createFlagName(config.KeyUsername)
+
+	flagCacheLifetime = createFlagName(config.KeyCacheLifetime)
 )
 
 var domainCmd = &cobra.Command{
@@ -39,7 +41,8 @@ var domainCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		client := client.NewClient(cfg.CreateFileCache(cache.ExpirySecondsDefault), &http.Client{})
+		cacheExpirySeconds, _ := cmd.Flags().GetInt(flagCacheLifetime)
+		client := client.NewClient(cfg.CreateFileCache(cacheExpirySeconds), &http.Client{})
 
 		response, err := client.Refresh(domain)
 		if err != nil {
@@ -64,6 +67,7 @@ func init() {
 	domainCmd.Flags().String(flagRequestMethod, config.DefaultRequestMethod, "Set request method of the service")
 	domainCmd.Flags().String(flagUserAgent, "", "Set user agent in refresh requests")
 	domainCmd.Flags().String(flagUsername, "", "Set username used to authenticate [<username>]")
+	domainCmd.Flags().Int(flagCacheLifetime, cache.ExpirySecondsDefault, "Cache lifetime in seconds [0 is disabled]")
 }
 
 func createDomain(cmd *cobra.Command, refreshUrl string) *config.Domain {

@@ -32,6 +32,7 @@ const (
 
 	KeyDomains         = "domains"
 	KeyRefreshInterval = "refresh_interval"
+	KeyCacheLifetime   = "cache_ttl"
 
 	KeyAuthMethod    = "auth_method"
 	KeyDomainName    = "domain"
@@ -66,6 +67,7 @@ var (
 type Config struct {
 	AppDir          string
 	AppVersion      string
+	CacheLifetime   int                  `mapstructure:"cache_ttl"`
 	Domains         []*Domain            `mapstructure:"domains"`
 	Templates       map[string]*Template `mapstructure:"templates"`
 	RefreshInterval int                  `mapstructure:"refresh_interval"`
@@ -75,6 +77,7 @@ func NewConfig(appVersion string) *Config {
 	c := &Config{
 		AppDir:          determineAppDir(),
 		AppVersion:      appVersion,
+		CacheLifetime:   cache.ExpirySecondsDefault,
 		Domains:         []*Domain{},
 		Templates:       map[string]*Template{},
 		RefreshInterval: DefaultRefreshInterval,

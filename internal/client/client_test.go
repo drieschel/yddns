@@ -23,6 +23,7 @@ func TestClient_RefreshWithoutCache(t *testing.T) {
 			cacheItem := cache.NewItem(test.expectedCacheKey, nil)
 
 			cacheMock := cache.NewMockCache(t)
+			cacheMock.EXPECT().IsValid(*cacheItem).Return(false).Once()
 			cacheMock.EXPECT().Get(test.expectedCacheKey).Return(cacheItem, nil).Once()
 			cacheMock.EXPECT().Set(cacheItem).Return(nil).Once()
 
@@ -47,10 +48,11 @@ func TestClient_RefreshWithValidCacheItem(t *testing.T) {
 			expectedResponse := "skipped refresh - configuration not changed"
 
 			//cache item must be valid hack
-			cacheItem := cache.NewItemWithCustomExpiry(test.expectedCacheKey, nil, 0)
+			cacheItem := cache.NewItemWithCustomExpiry(test.expectedCacheKey, nil, cache.ExpirySecondsIndefinite)
 			cacheItem.ModifiedAt = &time.Time{}
 
 			cacheMock := cache.NewMockCache(t)
+			cacheMock.EXPECT().IsValid(*cacheItem).Return(true).Once()
 			cacheMock.EXPECT().Get(test.expectedCacheKey).Return(cacheItem, nil).Once()
 			cacheMock.EXPECT().Set(cacheItem).Return(nil).Once()
 
