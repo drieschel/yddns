@@ -2,6 +2,9 @@
 
 This client aims to be simple and easy to use for updating ip addresses in dyn dns services. Plan is to make the integration into any system as easy as possible and to extend it with features step by step.
 
+> [!CAUTION]
+> The project is in alpha stadium. Please be aware that things like config structure and more may change until release.
+
 ## Features
 - Define static ipv4/ipv6 addresses per domain (will use it instead of identified wan ips)
 - Define ipv6 host id/interface id per domain (will use wan ipv6 prefix + host id instead of identified wan ipv6)
@@ -82,17 +85,19 @@ Usage:
   yddns refresh domain [refresh-url | :template-name] [flags]
 
 Flags:
-      --auth-method string      Set authentication method used for the service (default "basic")
-      --domain string           Set name of the domain in the refresh URL [<domain>]
-      --host string             Set host name of the service [<host>]
+      --username string         Set username used for authentication [<username>]
+      --password string         Set password used for authentication [<password>]
+      --domain string           Set your dns domain [<domain>]
       --ip4-address string      Set IPv4 address instead determining via wan request [<ip4>]
       --ip6-address string      Set IPv6 address instead determining via wan request [<ip6>]
-      --ip6-host-id string      Set IPv6 host id/interface id and use prefix + host id
-      --password string         Set password used to authenticate [<password>]
-      --protocol string         Set protocol in the refresh URL [<protocol>] (default "https")
-      --request-method string   Set request method of the service (default "GET")
+      --ip6-host-id string      Set IPv6 host id/interface id and use prefix + host id in the refresh url [<ip6>
+      --host string             Set host name of the service in the refresh url [<host>]
+      --protocol string         Set protocol in the refresh url [<protocol>] (default "https")
+      --auth-method string      Set authentication method in refresh requests (default "basic")
+      --request-method string   Set request method in refresh requests (default "GET")
       --user-agent string       Set user agent in refresh requests
-      --username string         Set username used to authenticate [<username>]
+      --cache-ttl int           Set relative domain configuration cache lifetime in seconds [0 is disabled] (default 600)
+      --cache-max-ttl int       Set max domain configuration cache lifetime in seconds [0 is disabled] (default 86400)
 ```
 ### Example
 ```shell

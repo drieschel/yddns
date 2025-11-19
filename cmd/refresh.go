@@ -42,12 +42,12 @@ var refreshCmd = &cobra.Command{
 			refreshInterval = cfg.RefreshInterval
 		}
 
-		cacheLifetime := cfg.CacheLifetime
+		cacheLifetime := cfg.CacheModifiedExpirySeconds
 		if periodically && cacheLifetime > 0 && cacheLifetime < (refreshInterval+2*len(domains)) {
-			cacheLifetime = refreshInterval + 2*len(domains)
+			cfg.CacheModifiedExpirySeconds = refreshInterval + 2*len(domains)
 		}
 
-		client := client.NewClient(cfg.CreateFileCache(cacheLifetime), &http.Client{})
+		client := client.NewClient(cfg.CreateFileCache(), &http.Client{})
 
 		for {
 			client.Clear()

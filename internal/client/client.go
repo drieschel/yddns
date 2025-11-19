@@ -106,14 +106,14 @@ func (c *Client) BuildRefreshUrl(domain *config.Domain) (string, error) {
 	}
 
 	url := domain.RefreshUrl
-	for search, replacement := range replacements {
+	for search, replacement := range *replacements {
 		url = strings.Replace(url, search, replacement, -1)
 	}
 
 	return url, nil
 }
 
-func (c *Client) BuildReplacements(domain *config.Domain) (map[string]string, error) {
+func (c *Client) BuildReplacements(domain *config.Domain) (*map[string]string, error) {
 	replacements := NewReplacements()
 
 	replacements.
@@ -134,7 +134,7 @@ func (c *Client) BuildReplacements(domain *config.Domain) (map[string]string, er
 		if ip4 == "" {
 			ip4, err = c.DetermineWanIp4()
 			if err != nil {
-				return map[string]string{}, err
+				return nil, err
 			}
 		}
 
@@ -149,7 +149,7 @@ func (c *Client) BuildReplacements(domain *config.Domain) (map[string]string, er
 		if ip6 == "" {
 			ip6, err = c.DetermineWanIp6()
 			if err != nil {
-				return map[string]string{}, err
+				return nil, err
 			}
 
 			if domain.Ip6HostId != "" {
@@ -218,7 +218,7 @@ func NewReplacements() *Replacements {
 	return &Replacements{defaults: map[string]string{}, items: map[string]string{}}
 }
 
-func (r *Replacements) Build() map[string]string {
+func (r *Replacements) Build() *map[string]string {
 	replacements := map[string]string{}
 	for key, value := range r.items {
 		if defaultValue, ok := r.defaults[key]; value == "" && ok {
@@ -228,7 +228,7 @@ func (r *Replacements) Build() map[string]string {
 		replacements[createReplaceKey(key)] = value
 	}
 
-	return replacements
+	return &replacements
 }
 
 func (r *Replacements) Set(key string, value string) *Replacements {

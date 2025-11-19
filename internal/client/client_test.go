@@ -48,8 +48,8 @@ func TestClient_RefreshWithValidCacheItem(t *testing.T) {
 			expectedResponse := "skipped refresh - configuration not changed"
 
 			//cache item must be valid hack
-			cacheItem := cache.NewItemWithCustomExpiry(test.expectedCacheKey, nil, cache.ExpirySecondsIndefinite)
-			cacheItem.ModifiedAt = &time.Time{}
+			cacheItem := cache.NewItemWithCustomExpiry(test.expectedCacheKey, nil, cache.ExpirySecondsIndefinite, cache.ExpirySecondsIndefinite)
+			cacheItem.Modified = &time.Time{}
 
 			cacheMock := cache.NewMockCache(t)
 			cacheMock.EXPECT().IsValid(*cacheItem).Return(true).Once()
@@ -155,7 +155,7 @@ func TestClient_BuildReplacements(t *testing.T) {
 func refreshUrlTable() []struct {
 	name                 string
 	domain               config.Domain
-	expectedReplacements map[string]string
+	expectedReplacements *map[string]string
 	expectedUrl          string
 	wanIp4               string
 	wanIp6               string
@@ -163,7 +163,7 @@ func refreshUrlTable() []struct {
 	return []struct {
 		name                 string
 		domain               config.Domain
-		expectedReplacements map[string]string
+		expectedReplacements *map[string]string
 		expectedUrl          string
 		wanIp4               string
 		wanIp6               string
@@ -171,7 +171,7 @@ func refreshUrlTable() []struct {
 		{
 			name:                 "IPv4/IPv6 replacements WAN IPv4/IPv6 requests",
 			domain:               config.Domain{DomainName: "yddns.drieschel.org", AuthUser: "foo", AuthPassword: "bar", Template: config.Template{RefreshUrl: "<protocol>://<host>?a=<username>&b=<password>&c=<domain>&e=<ip4>&f=<ip6>", Host: "fancy-dyn.dns", Protocol: "http"}},
-			expectedReplacements: map[string]string{"<username>": "foo", "<password>": "bar", "<domain>": "yddns.drieschel.org", "<host>": "fancy-dyn.dns", "<protocol>": "http", "<ip4>": "125.148.255.41", "<ip6>": "e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7"},
+			expectedReplacements: &map[string]string{"<username>": "foo", "<password>": "bar", "<domain>": "yddns.drieschel.org", "<host>": "fancy-dyn.dns", "<protocol>": "http", "<ip4>": "125.148.255.41", "<ip6>": "e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7"},
 			expectedUrl:          "http://fancy-dyn.dns?a=foo&b=bar&c=yddns.drieschel.org&e=125.148.255.41&f=e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
 			wanIp4:               "125.148.255.41",
 			wanIp6:               "e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
@@ -179,7 +179,7 @@ func refreshUrlTable() []struct {
 		{
 			name:                 "IPv4 replacement only WAN IPv4 request",
 			domain:               config.Domain{Template: config.Template{RefreshUrl: "https://fancy-dyn.dns?e=<ip4>"}},
-			expectedReplacements: map[string]string{"<username>": "", "<password>": "", "<domain>": "", "<host>": "", "<protocol>": "https", "<ip4>": "125.148.255.41"},
+			expectedReplacements: &map[string]string{"<username>": "", "<password>": "", "<domain>": "", "<host>": "", "<protocol>": "https", "<ip4>": "125.148.255.41"},
 			expectedUrl:          "https://fancy-dyn.dns?e=125.148.255.41",
 			wanIp4:               "125.148.255.41",
 			wanIp6:               "",
@@ -187,7 +187,7 @@ func refreshUrlTable() []struct {
 		{
 			name:                 "IPv6 replacement only WAN IPv6 request",
 			domain:               config.Domain{Template: config.Template{RefreshUrl: "https://fancy-dyn.dns?f=<ip6>"}},
-			expectedReplacements: map[string]string{"<username>": "", "<password>": "", "<domain>": "", "<host>": "", "<protocol>": "https", "<ip6>": "e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7"},
+			expectedReplacements: &map[string]string{"<username>": "", "<password>": "", "<domain>": "", "<host>": "", "<protocol>": "https", "<ip6>": "e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7"},
 			expectedUrl:          "https://fancy-dyn.dns?f=e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
 			wanIp4:               "",
 			wanIp6:               "e764:9ec5:88f3:94a9:ad4c:a7b4:4075:1ca7",
@@ -195,7 +195,7 @@ func refreshUrlTable() []struct {
 		{
 			name:                 "No IP replacements no WAN requests",
 			domain:               config.Domain{Template: config.Template{RefreshUrl: "https://fancy-dyn.dns/something"}},
-			expectedReplacements: map[string]string{"<username>": "", "<password>": "", "<domain>": "", "<host>": "", "<protocol>": "https"},
+			expectedReplacements: &map[string]string{"<username>": "", "<password>": "", "<domain>": "", "<host>": "", "<protocol>": "https"},
 			expectedUrl:          fmt.Sprintf("https://fancy-dyn.dns/something"),
 			wanIp4:               "",
 			wanIp6:               "",
@@ -203,7 +203,7 @@ func refreshUrlTable() []struct {
 		{
 			name:                 "Static IPv4 and IPv6 no WAN requests IPv6 host id ignored",
 			domain:               config.Domain{Ip4Address: "192.124.234.52", Ip6Address: "f724:a6ff:51dc:d827:5bbd:ce50:fa6a:d7e2", Ip6HostId: "a7cc:409a:e841:ea15", Template: config.Template{RefreshUrl: "https://fancy-dyn.dns?e=<ip4>&f=<ip6>"}},
-			expectedReplacements: map[string]string{"<username>": "", "<password>": "", "<domain>": "", "<host>": "", "<protocol>": "https", "<ip4>": "192.124.234.52", "<ip6>": "f724:a6ff:51dc:d827:5bbd:ce50:fa6a:d7e2"},
+			expectedReplacements: &map[string]string{"<username>": "", "<password>": "", "<domain>": "", "<host>": "", "<protocol>": "https", "<ip4>": "192.124.234.52", "<ip6>": "f724:a6ff:51dc:d827:5bbd:ce50:fa6a:d7e2"},
 			expectedUrl:          "https://fancy-dyn.dns?e=192.124.234.52&f=f724:a6ff:51dc:d827:5bbd:ce50:fa6a:d7e2",
 			wanIp4:               "",
 			wanIp6:               "",
@@ -211,7 +211,7 @@ func refreshUrlTable() []struct {
 		{
 			name:                 "IPv6 host id + WAN IPv6 request = WAN IPv6 prefix + host id",
 			domain:               config.Domain{Ip4Address: "192.124.234.52", Ip6HostId: "a7cc:409a:e841:ea15", Template: config.Template{RefreshUrl: "https://fancy-dyn.dns?e=<ip4>&f=<ip6>"}},
-			expectedReplacements: map[string]string{"<username>": "", "<password>": "", "<domain>": "", "<host>": "", "<protocol>": "https", "<ip4>": "192.124.234.52", "<ip6>": "d710:6c3b:b3c3:9f6b:a7cc:409a:e841:ea15"},
+			expectedReplacements: &map[string]string{"<username>": "", "<password>": "", "<domain>": "", "<host>": "", "<protocol>": "https", "<ip4>": "192.124.234.52", "<ip6>": "d710:6c3b:b3c3:9f6b:a7cc:409a:e841:ea15"},
 			expectedUrl:          "https://fancy-dyn.dns?e=192.124.234.52&f=d710:6c3b:b3c3:9f6b:a7cc:409a:e841:ea15",
 			wanIp4:               "",
 			wanIp6:               "d710:6c3b:b3c3:9f6b:a7cc:409a:e841:ea15",

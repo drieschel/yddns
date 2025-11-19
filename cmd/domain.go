@@ -24,7 +24,8 @@ var (
 	flagUserAgent     = createFlagName(config.KeyUserAgent)
 	flagUsername      = createFlagName(config.KeyUsername)
 
-	flagCacheLifetime = createFlagName(config.KeyCacheLifetime)
+	flagCacheCreatedLifetime  = createFlagName(config.KeyCacheCreatedExpirySeconds)
+	flagCacheModifiedLifetime = createFlagName(config.KeyCacheModifiedExpirySeconds)
 )
 
 var domainCmd = &cobra.Command{
@@ -33,16 +34,15 @@ var domainCmd = &cobra.Command{
 	Long:  `Refresh a single domain config via command"`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		cfg := createConfig(cmd)
 		domain := createDomain(cmd, args[0])
-		cfg := config.NewConfig(version)
 
 		err := cfg.PrepareDomain(domain)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		cacheExpirySeconds, _ := cmd.Flags().GetInt(flagCacheLifetime)
-		client := client.NewClient(cfg.CreateFileCache(cacheExpirySeconds), &http.Client{})
+		client := client.NewClient(cfg.CreateFileCache(), &http.Client{})
 
 		response, err := client.Refresh(domain)
 		if err != nil {
@@ -56,18 +56,28 @@ var domainCmd = &cobra.Command{
 func init() {
 	refreshCmd.AddCommand(domainCmd)
 
-	domainCmd.Flags().String(flagAuthMethod, config.DefaultAuthMethod, "Set authentication method used for the service")
-	domainCmd.Flags().String(flagDomainName, "", "Set name of the domain in the refresh URL [<domain>]")
-	domainCmd.Flags().String(flagHost, "", "Set host name of the service [<host>]")
+	domainCmd.Flags().String(flagUsername, "", "Set username used for authentication [<username>]")
+	domainCmd.Flags().String(flagPassword, "", "Set password used for authentication [<password>]")
+	domainCmd.Flags().String(flagDomainName, "", "Set your dns domain [<domain>]")
 	domainCmd.Flags().String(flagIp4Address, "", "Set IPv4 address instead determining via wan request [<ip4>]")
 	domainCmd.Flags().String(flagIp6Address, "", "Set IPv6 address instead determining via wan request [<ip6>]")
-	domainCmd.Flags().String(flagIp6HostId, "", "Set IPv6 host id/interface id and use prefix + host id")
-	domainCmd.Flags().String(flagPassword, "", "Set password used to authenticate [<password>]")
-	domainCmd.Flags().String(flagProtocol, config.DefaultProtocol, "Set protocol in the refresh URL [<protocol>]")
-	domainCmd.Flags().String(flagRequestMethod, config.DefaultRequestMethod, "Set request method of the service")
+	domainCmd.Flags().String(flagIp6HostId, "", "Set IPv6 host id/interface id and use prefix + host id in the refresh url [<ip6>")
+	domainCmd.Flags().String(flagHost, "", "Set host name of the service in the refresh url [<host>]")
+	domainCmd.Flags().String(flagProtocol, config.DefaultProtocol, "Set protocol in the refresh url [<protocol>]")
+	domainCmd.Flags().String(flagAuthMethod, config.DefaultAuthMethod, "Set authentication method in refresh requests")
+	domainCmd.Flags().String(flagRequestMethod, config.DefaultRequestMethod, "Set request method in refresh requests")
 	domainCmd.Flags().String(flagUserAgent, "", "Set user agent in refresh requests")
-	domainCmd.Flags().String(flagUsername, "", "Set username used to authenticate [<username>]")
-	domainCmd.Flags().Int(flagCacheLifetime, cache.ExpirySecondsDefault, "Cache lifetime in seconds [0 is disabled]")
+	domainCmd.Flags().Int(flagCacheModifiedLifetime, cache.ModifiedExpirySecondsDefault, "Set relative domain configuration cache lifetime in seconds [0 is disabled]")
+	domainCmd.Flags().Int(flagCacheCreatedLifetime, cache.CreatedExpirySecondsDefault, "Set max domain configuration cache lifetime in seconds [0 is disabled]")
+	domainCmd.Flags().SortFlags = false
+}
+
+func createConfig(cmd *cobra.Command) *config.Config {
+	cfg := config.NewConfig(version)
+	cfg.CacheCreatedExpirySeconds, _ = cmd.Flags().GetInt(flagCacheCreatedLifetime)
+	cfg.CacheModifiedExpirySeconds, _ = cmd.Flags().GetInt(flagCacheModifiedLifetime)
+
+	return cfg
 }
 
 func createDomain(cmd *cobra.Command, refreshUrl string) *config.Domain {

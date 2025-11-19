@@ -30,9 +30,10 @@ const (
 	DefaultProtocol        = ProtocolHttps
 	DefaultRefreshInterval = 60
 
-	KeyDomains         = "domains"
-	KeyRefreshInterval = "refresh_interval"
-	KeyCacheLifetime   = "cache_ttl"
+	KeyDomains                    = "domains"
+	KeyRefreshInterval            = "refresh_interval"
+	KeyCacheCreatedExpirySeconds  = "cache_max_ttl"
+	KeyCacheModifiedExpirySeconds = "cache_ttl"
 
 	KeyAuthMethod    = "auth_method"
 	KeyDomainName    = "domain"
@@ -65,22 +66,24 @@ var (
 )
 
 type Config struct {
-	AppDir          string
-	AppVersion      string
-	CacheLifetime   int                  `mapstructure:"cache_ttl"`
-	Domains         []*Domain            `mapstructure:"domains"`
-	Templates       map[string]*Template `mapstructure:"templates"`
-	RefreshInterval int                  `mapstructure:"refresh_interval"`
+	AppDir                     string
+	AppVersion                 string
+	CacheCreatedExpirySeconds  int                  `mapstructure:"cache_max_ttl"`
+	CacheModifiedExpirySeconds int                  `mapstructure:"cache_ttl"`
+	Domains                    []*Domain            `mapstructure:"domains"`
+	Templates                  map[string]*Template `mapstructure:"templates"`
+	RefreshInterval            int                  `mapstructure:"refresh_interval"`
 }
 
 func NewConfig(appVersion string) *Config {
 	c := &Config{
-		AppDir:          determineAppDir(),
-		AppVersion:      appVersion,
-		CacheLifetime:   cache.ExpirySecondsDefault,
-		Domains:         []*Domain{},
-		Templates:       map[string]*Template{},
-		RefreshInterval: DefaultRefreshInterval,
+		AppDir:                     determineAppDir(),
+		AppVersion:                 appVersion,
+		CacheCreatedExpirySeconds:  cache.CreatedExpirySecondsDefault,
+		CacheModifiedExpirySeconds: cache.ModifiedExpirySecondsDefault,
+		Domains:                    []*Domain{},
+		Templates:                  map[string]*Template{},
+		RefreshInterval:            DefaultRefreshInterval,
 	}
 
 	err := readFileTemplates(c)
@@ -152,10 +155,10 @@ func (c *Config) PrepareAndGetDomains() ([]*Domain, error) {
 	return domains, nil
 }
 
-func (c *Config) CreateFileCache(expirySeconds int) cache.Cache {
-	cacheDir := fmt.Sprintf("%s/%s", c.AppDir, DirNameCache)
+func (c *Config) CreateFileCache() cache.Cache {
+	cacheDir := filepath.Join(c.AppDir, DirNameCache)
 
-	return cache.NewFileCache(cacheDir, expirySeconds)
+	return cache.NewFileCache(cacheDir, c.CacheCreatedExpirySeconds, c.CacheModifiedExpirySeconds)
 }
 
 func readFileTemplates(c *Config) error {
